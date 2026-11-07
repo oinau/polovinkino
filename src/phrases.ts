@@ -1,6 +1,11 @@
 // Every phrase the game can say aloud, generated from the level data, for the voice studio.
-import { GNOME_LEVELS, PIZZA_LEVELS } from './levels';
-import { GNOME_NOTES, HEROES, LINES, PIZZA_NOTES, REACTIONS, explainDispute, gnomeClaims, orderLine } from './lines';
+import { CLOCK_LEVELS, GNOME_LEVELS, PIZZA_LEVELS } from './levels';
+import {
+  CLOCK_ASK, CLOCK_FINALE, CLOCK_NOTES, GNOME_NOTES, HEROES, LINES, PIZZA_NOTES, REACTIONS, clockLetter, clockSetExplain,
+  clockWaitAsk, clockWaitExplain, explainDispute, gnomeClaims, orderLine,
+} from './lines';
+import { explainTime, timeWords } from './time';
+import { capitalize } from './fractions';
 import { phraseKey } from './voicekey';
 
 export type Speaker = 'narrator' | 'ekibas' | 'osya' | 'borovik' | 'usach' | 'ochkarik';
@@ -60,6 +65,29 @@ export function allPhrases(): Phrase[] {
     }
   });
   GNOME_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Гномы, итог'));
+
+  add(CLOCK_ASK, 'narrator', 'Часы, вопрос Тихона');
+  add('Посмотри на зелёную дугу: каждое деление — 5 минут. Посчитай!', 'narrator', 'Часы, подсказка');
+  CLOCK_LEVELS.forEach((lv, i) => {
+    const where = `Часы, уровень ${i + 1}`;
+    add(lv.intro, 'narrator', `${where}, вступление`);
+    for (const r of lv.rounds) {
+      if (r.kind === 'read') {
+        add(`Верно! ${capitalize(timeWords(r.t))}.`, 'narrator', `${where}, верный ответ`);
+        add(explainTime(r.t), 'narrator', `${where}, ошибка`);
+      } else if (r.kind === 'set') {
+        add(clockLetter(r.to), 'narrator', `${where}, письмо Носочки`);
+        add(`Верно! ${capitalize(timeWords(r.to))}.`, 'narrator', `${where}, верный ответ`);
+        add(clockSetExplain(r.to), 'narrator', `${where}, ошибка`);
+      } else {
+        add(clockWaitAsk(r.now, r.meet), 'narrator', `${where}, вопрос`);
+        add(`Верно! ${clockWaitExplain(r.now, r.meet)}`, 'narrator', `${where}, верный ответ`);
+        add(clockWaitExplain(r.now, r.meet), 'narrator', `${where}, ошибка`);
+      }
+    }
+  });
+  add(CLOCK_FINALE, 'narrator', 'Часы, Носочка пришла');
+  CLOCK_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Часы, итог'));
 
   return list;
 }

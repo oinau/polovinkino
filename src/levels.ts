@@ -132,3 +132,60 @@ export const GNOME_LEVELS: GnomeLevel[] = [
     rounds: [d(f(2, 3), f(4, 6)), d(f(2, 3), f(1, 2)), d(f(1, 2), f(3, 6)), d(f(5, 6), f(2, 3)), d(f(2, 6), f(1, 3))],
   },
 ];
+
+// ---------- clock square: Tikhon waits for Nosochka ----------
+// Times are minutes since 12:00: 2:30 = 150.
+const T = (h: number, m: number) => h * 60 + m;
+
+export type ClockRound =
+  | { kind: 'read'; t: number; options: number[] }
+  | { kind: 'set'; from: number; to: number }
+  | { kind: 'wait'; now: number; meet: number; options: number[] };
+
+export interface ClockLevel {
+  name: string;
+  intro: string;
+  guide: boolean;
+  rounds: ClockRound[];
+}
+
+const WAIT_OPTIONS = [10, 15, 20, 30, 45];
+
+export const CLOCK_LEVELS: ClockLevel[] = [
+  {
+    name: 'Который час?',
+    intro: 'Носок Тихон ждёт Носочку у больших часов и всё время спрашивает, который час. Посмотри на стрелки и подскажи ему!',
+    guide: true,
+    rounds: [
+      { kind: 'read', t: T(3, 0), options: [T(3, 0), T(12, 0), T(2, 30)] },
+      { kind: 'read', t: T(2, 30), options: [T(1, 30), T(2, 30), T(3, 30)] },
+      { kind: 'read', t: T(2, 15), options: [T(2, 15), T(1, 15), T(2, 45)] },
+      { kind: 'read', t: T(2, 45), options: [T(2, 45), T(1, 45), T(2, 15)] },
+      { kind: 'read', t: T(3, 30), options: [T(3, 30), T(2, 30), T(3, 0)] },
+    ],
+  },
+  {
+    name: 'Поставь стрелки',
+    intro: 'Носочка пишет Тихону, во сколько придёт. Поставь стрелки на это время, чтобы Тихон не перепутал. Тяни минутную стрелку — часовая пойдёт сама.',
+    guide: true,
+    rounds: [
+      { kind: 'set', from: T(2, 0), to: T(2, 30) },
+      { kind: 'set', from: T(2, 0), to: T(2, 15) },
+      { kind: 'set', from: T(2, 0), to: T(2, 45) },
+      { kind: 'set', from: T(2, 30), to: T(3, 0) },
+      { kind: 'set', from: T(3, 0), to: T(3, 30) },
+    ],
+  },
+  {
+    name: 'Сколько ждать?',
+    intro: 'Тихон пришёл раньше. Посчитай, сколько минут ему ждать Носочку. Подсказка: четверть часа — это пятнадцать минут.',
+    guide: false,
+    rounds: [
+      { kind: 'wait', now: T(2, 15), meet: T(2, 30), options: WAIT_OPTIONS },
+      { kind: 'wait', now: T(2, 0), meet: T(2, 30), options: WAIT_OPTIONS },
+      { kind: 'wait', now: T(2, 30), meet: T(2, 45), options: WAIT_OPTIONS },
+      { kind: 'wait', now: T(2, 15), meet: T(3, 0), options: WAIT_OPTIONS },
+      { kind: 'wait', now: T(2, 40), meet: T(3, 0), options: WAIT_OPTIONS },
+    ],
+  },
+];

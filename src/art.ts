@@ -134,6 +134,28 @@ function tikhon(mood: Mood) {
     ${face}`);
 }
 
+// ---------- Nosochka, Tikhon's pair ----------
+function nosochka(mood: Mood) {
+  const base = '#F2B79F';
+  const face = {
+    normal: `<circle cx="55" cy="47" r="3.5" fill="${P.navy}"/><circle cx="67" cy="47" r="3.5" fill="${P.navy}"/>
+             <path d="M54 58 q7 5 14 0" fill="none" ${S} stroke-width="2.5" stroke-linecap="round"/>`,
+    happy: `<path d="M51 48 q4 -5 8 0 M63 48 q4 -5 8 0" fill="none" ${S} stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M54 55 q7 9 14 0 Z" fill="${P.navy}" ${S} stroke-width="2" stroke-linejoin="round"/>`,
+    angry: `<circle cx="55" cy="48" r="3.5" fill="${P.navy}"/><circle cx="67" cy="48" r="3.5" fill="${P.navy}"/>
+            <path d="M55 61 q6 -5 12 0" fill="none" ${S} stroke-width="2.5" stroke-linecap="round"/>`,
+  }[mood];
+  return svg([8, 0, 72, 106], `
+    <path d="M45 15 L75 15 L75 76 Q75 102 50 102 L26 102 Q12 102 12 90 Q12 79 25 77 L45 71 Z" fill="${base}" ${S} stroke-width="3.5" stroke-linejoin="round"/>
+    <rect x="45" y="15" width="30" height="7" fill="${P.paper}"/><rect x="45" y="27" width="30" height="5" fill="${P.paper}"/>
+    <path d="M45 15 L75 15" ${S} stroke-width="3.5"/>
+    <path d="M60 10 L48 3 L48 17 Z M60 10 L72 3 L72 17 Z" fill="${P.mustard}" ${S} stroke-width="2.5" stroke-linejoin="round"/>
+    <circle cx="60" cy="10" r="3.5" fill="${P.terra}" ${S} stroke-width="2"/>
+    <path d="M51 42 l-2 -3 M55 41 l0 -3 M65 41 l0 -3 M69 42 l2 -3" ${S} stroke-width="2" stroke-linecap="round"/>
+    <ellipse cx="50" cy="55" rx="4" ry="2.5" fill="${P.terra}" opacity=".6"/><ellipse cx="72" cy="55" rx="4" ry="2.5" fill="${P.terra}" opacity=".6"/>
+    ${face}`);
+}
+
 // ---------- Ded Borovik, the old mushroom ----------
 function borovik(mood: Mood) {
   const cap = mood === 'angry' ? P.terra : P.olive;
@@ -234,6 +256,25 @@ function house(roof: string, prop: 'box' | 'boat' | 'flask') {
     ${props}`);
 }
 
+function clockTower() {
+  let ticks = '';
+  for (let i = 0; i < 12; i++) {
+    const a = (i * Math.PI) / 6;
+    ticks += `<line x1="${150 + 30 * Math.sin(a)}" y1="${118 - 30 * Math.cos(a)}" x2="${150 + 35 * Math.sin(a)}" y2="${118 - 35 * Math.cos(a)}" ${S} stroke-width="2.5"/>`;
+  }
+  return svg([0, 0, 300, 300], `
+    <path d="M90 66 L150 12 L210 66 Z" fill="${P.terra}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    <rect x="102" y="66" width="96" height="226" fill="${P.sand}" ${S} stroke-width="4"/>
+    <circle cx="150" cy="118" r="40" fill="${P.paper}" ${S} stroke-width="4"/>
+    ${ticks}
+    <line x1="150" y1="118" x2="150" y2="150" ${S} stroke-width="4" stroke-linecap="round"/>
+    <line x1="150" y1="118" x2="166" y2="104" ${S} stroke-width="6" stroke-linecap="round"/>
+    <circle cx="150" cy="118" r="4" fill="${P.navy}"/>
+    <rect x="126" y="186" width="48" height="26" rx="4" fill="${P.paper}" ${S} stroke-width="3"/>
+    <path d="M132 292 V246 a18 18 0 0 1 36 0 V292" fill="${P.olive}" ${S} stroke-width="4"/>
+    <path d="M222 262 c-8 -10 -20 -2 -12 8 l12 12 l12 -12 c8 -10 -4 -18 -12 -8 z" fill="${P.terra}" ${S} stroke-width="3" stroke-linejoin="round"/>`);
+}
+
 export const CUSTOMERS = ['ekibas', 'osya', 'tikhon', 'borovik'] as const;
 export type CustomerId = (typeof CUSTOMERS)[number];
 
@@ -247,9 +288,11 @@ export function allArt(): Art[] {
     list.push({ key: `borovik-${m}`, svg: borovik(m), scale: 3.8 });
     list.push({ key: `usach-${m}`, svg: gnome('usach', m), scale: 4.2 });
     list.push({ key: `ochkarik-${m}`, svg: gnome('ochkarik', m), scale: 4.2 });
+    list.push({ key: `nosochka-${m}`, svg: nosochka(m), scale: 4.2 });
   }
   list.push({ key: 'house-pizza', svg: pizzeriaHouse(), scale: 1.6 });
   list.push({ key: 'house-gazebo', svg: gazebo(), scale: 1.6 });
+  list.push({ key: 'house-clock', svg: clockTower(), scale: 1.6 });
   list.push({ key: 'house-courier', svg: house(P.terra, 'box'), scale: 1.1 });
   list.push({ key: 'house-pier', svg: house(P.olive, 'boat'), scale: 1.1 });
   list.push({ key: 'house-potion', svg: house(P.mustard, 'flask'), scale: 1.1 });

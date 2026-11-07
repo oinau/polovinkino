@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { C, HEX, W, H } from '../theme';
 import { store, type Place } from '../store';
-import { PIZZA_LEVELS, GNOME_LEVELS } from '../levels';
+import { CLOCK_LEVELS, GNOME_LEVELS, PIZZA_LEVELS } from '../levels';
 import { Button, label, iconButton, modal, starShape } from '../ui';
 import { nextVoice, ruVoices, sfx, voiceName } from '../audio';
 
@@ -15,13 +15,17 @@ interface Spot {
   y: number;
 }
 
+const LEVELS: Record<Place, { name: string }[]> = { pizza: PIZZA_LEVELS, gnomes: GNOME_LEVELS, clock: CLOCK_LEVELS };
+const SCENE: Record<Place, string> = { pizza: 'Pizzeria', gnomes: 'Gnomes', clock: 'Clock' };
+
 const SPOTS: Spot[] = [
   // Closed places stand on the far hill, open ones in front.
-  { key: 'house-courier', x: 1520, y: 690, name: 'Курьеры', scale: 0.56 },
-  { key: 'house-pier', x: 1690, y: 700, name: 'Пристань', scale: 0.56 },
-  { key: 'house-potion', x: 1825, y: 690, name: 'Зельеварня', scale: 0.56 },
-  { key: 'house-pizza', x: 390, y: 890, name: 'Пиццерия «Кусочек»', place: 'pizza', scale: 1 },
-  { key: 'house-gazebo', x: 1000, y: 890, name: 'Беседка спорщиков', place: 'gnomes', scale: 1 },
+  { key: 'house-courier', x: 1590, y: 650, name: 'Курьеры', scale: 0.5 },
+  { key: 'house-pier', x: 1720, y: 660, name: 'Пристань', scale: 0.5 },
+  { key: 'house-potion', x: 1845, y: 650, name: 'Зельеварня', scale: 0.5 },
+  { key: 'house-pizza', x: 290, y: 890, name: 'Пиццерия «Кусочек»', place: 'pizza', scale: 0.92 },
+  { key: 'house-gazebo', x: 870, y: 890, name: 'Беседка спорщиков', place: 'gnomes', scale: 0.92 },
+  { key: 'house-clock', x: 1420, y: 890, name: 'Площадь с часами', place: 'clock', scale: 0.92 },
 ];
 
 export class Town extends Phaser.Scene {
@@ -48,10 +52,10 @@ export class Town extends Phaser.Scene {
     for (const s of SPOTS) this.addSpot(s);
 
     // Residents hanging around their buildings.
-    const pyh = this.add.image(690, 900, 'pyh-normal').setOrigin(0.5, 1).setScale(0.55);
+    const pyh = this.add.image(565, 900, 'pyh-normal').setOrigin(0.5, 1).setScale(0.5);
     this.tweens.add({ targets: pyh, y: 892, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-    const g1 = this.add.image(1250, 905, 'usach-normal').setOrigin(0.5, 1).setScale(0.48);
-    const g2 = this.add.image(1335, 905, 'ochkarik-normal').setOrigin(0.5, 1).setScale(0.48).setFlipX(true);
+    const g1 = this.add.image(1110, 905, 'usach-normal').setOrigin(0.5, 1).setScale(0.44);
+    const g2 = this.add.image(1188, 905, 'ochkarik-normal').setOrigin(0.5, 1).setScale(0.44).setFlipX(true);
     this.tweens.add({ targets: [g1, g2], scaleY: 0.5, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
   }
 
@@ -106,7 +110,7 @@ export class Town extends Phaser.Scene {
     const y = s.y;
     const img = this.add.image(s.x, y, s.key).setOrigin(0.5, 1).setScale(s.scale);
     const open = !!s.place;
-    label(this, s.x, y + (open ? 60 : 30), s.name, open ? 40 : 26, open ? HEX.paper : HEX.navy, 900);
+    label(this, s.x, y + (open ? 60 : 30), s.name, open ? 40 : 22, open ? HEX.paper : HEX.navy, 900);
 
     if (!open) {
       img.setAlpha(0.5);
@@ -115,12 +119,12 @@ export class Town extends Phaser.Scene {
       lock.fillStyle(C.navy).fillRoundedRect(-34, -18, 68, 54, 10);
       lock.fillStyle(C.paper).fillCircle(0, 4, 8);
       lock.setPosition(s.x, y - 100);
-      label(this, s.x, y + 60, 'скоро', 24, HEX.terra, 800);
+      label(this, s.x, y + 60, 'скоро', 20, HEX.terra, 800);
       return;
     }
 
     const place = s.place!;
-    const total = (place === 'pizza' ? PIZZA_LEVELS : GNOME_LEVELS).length * 3;
+    const total = LEVELS[place].length * 3;
     const sg = this.add.graphics();
     starShape(sg, s.x - 60, y + 125, 24, true);
     label(this, s.x + 14, y + 125, `${store.totalStars(place)} / ${total}`, 36, HEX.paper, 900);
@@ -132,7 +136,7 @@ export class Town extends Phaser.Scene {
   }
 
   private openPicker(place: Place, title: string) {
-    const levels = place === 'pizza' ? PIZZA_LEVELS : GNOME_LEVELS;
+    const levels = LEVELS[place];
     const layer = modal(this, 1400, 660);
     const top = H / 2 - 330;
     layer.add(label(this, W / 2, top + 80, title, 56, HEX.navy, 900));
@@ -164,7 +168,7 @@ export class Town extends Phaser.Scene {
         const hit = this.add.circle(x, y, 95).setInteractive({ useHandCursor: true });
         hit.on('pointerup', () => {
           sfx('click');
-          this.scene.start(place === 'pizza' ? 'Pizzeria' : 'Gnomes', { level: i });
+          this.scene.start(SCENE[place], { level: i });
         });
         layer.add(hit);
       }

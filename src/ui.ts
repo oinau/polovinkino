@@ -221,7 +221,7 @@ export class Guide {
   constructor(scene: Scene, y = 150) {
     this.scene = scene;
     this.pillBg = scene.add.graphics();
-    this.pillText = label(scene, 0, -2, '', 34, HEX.paper, 800);
+    this.pillText = label(scene, 0, -2, '', 34, HEX.paper, 800).setWordWrapWidth(1500, true).setLineSpacing(2);
     this.pill = scene.add.container(W / 2, y, [this.pillBg, this.pillText]).setDepth(50);
     const a = scene.add.graphics();
     a.fillStyle(C.paper).fillTriangle(-34, -40, 34, -40, 0, 8);
@@ -233,7 +233,8 @@ export class Guide {
 
   say(text: string) {
     this.pillText.setText(text);
-    const w = this.pillText.width + 70, h = 72;
+    // Long explanations wrap onto a second line; the pill grows with them.
+    const w = this.pillText.width + 70, h = Math.max(72, this.pillText.height + 26);
     this.pillBg.clear().fillStyle(C.navy).fillRoundedRect(-w / 2, -h / 2, w, h, 36);
     this.pill.setVisible(text.length > 0);
     this.pill.setScale(0.9);

@@ -3,6 +3,7 @@
 import type { CustomerId } from './art';
 import type { Dispute } from './levels';
 import { capitalize, compare, str, words, type Frac } from './fractions';
+import { hourPart, meetWords, minuteMark, minutesWords, timeWords } from './time';
 
 // ---------- pizzeria ----------
 export type Reaction = 'happy' | 'little' | 'much' | 'leave';
@@ -116,7 +117,7 @@ export function explainDispute(d: Dispute, spoken = false) {
 export const VOICE_SAMPLE = 'Привет! Я буду читать заказы. Мне две третьих пиццы!';
 
 // ---------- heroes: name tags and the one-time introduction card ----------
-export type HeroId = CustomerId | 'pyh' | 'gnomes';
+export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka';
 
 export const HEROES: Record<HeroId, { name: string; tag: string; textures: string[]; intro: string }> = {
   pyh: {
@@ -139,8 +140,28 @@ export const HEROES: Record<HeroId, { name: string; tag: string; textures: strin
     name: 'Дед Боровик', tag: 'Дед Боровик', textures: ['borovik-happy'],
     intro: 'Это дед Боровик, самый старый гриб в Половинкино. Терпеливый, но любит поворчать.',
   },
+  nosochka: {
+    name: 'Носочка', tag: 'Носочка', textures: ['nosochka-happy'],
+    intro: 'Это Носочка — пара Тихона. Она любит бантики и всегда приходит вовремя. Наконец-то они снова вместе!',
+  },
   gnomes: {
     name: 'Усач и Очкарик', tag: '', textures: ['usach-happy', 'ochkarik-happy'],
     intro: 'Это гномы Усач и Очкарик. Они дружат с детства и спорят с утра до вечера — особенно о том, кому больше пирога.',
   },
 };
+
+// ---------- clock square ----------
+export const CLOCK_ASK = 'Тихон спрашивает: который час?';
+export const CLOCK_SET_HINT = 'Тяни минутную стрелку.';
+export const CLOCK_FINALE = 'Носочка пришла! Тихон и Носочка снова вместе.';
+export const CLOCK_NOTES = ['', 'Встреча состоялась! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Тихон очень благодарен.', 'Ни одной ошибки! Тихон пришёл минута в минуту.'];
+
+export const clockLetter = (to: number) => `Носочка пишет: «Встретимся ${meetWords(to)}».`;
+export const clockSetExplain = (to: number) => `Нужно ${timeWords(to)}: минутная стрелка должна смотреть на ${minuteMark(to)}.`;
+export const clockWaitAsk = (now: number, meet: number) => `Сейчас ${timeWords(now)}. Встреча ${meetWords(meet)}. Сколько минут ждать?`;
+
+export function clockWaitExplain(now: number, meet: number) {
+  const diff = meet - now;
+  const part = hourPart(diff);
+  return `Сейчас ${timeWords(now)}, встреча ${meetWords(meet)}: ждать ${minutesWords(diff)}.${part ? ` Это ${part.words}.` : ''}`;
+}
