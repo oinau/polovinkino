@@ -249,22 +249,64 @@ export class Doctor extends Phaser.Scene {
     this.r = this.level.rounds[this.roundIndex];
     this.triesOnRound = 0;
     this.clearRound();
+    this.guide.say('');
     const r = this.r;
     if (r.kind === 'sort') { this.startSort(r); return; }
 
     const h = heightOf(r);
+    const stretched = !sameValue(h, HEIGHTS[r.who]);
     const begin = () => {
       if (r.kind === 'set') this.startSet(r.who, h);
-      else this.startRead(r.who, h, r.options);
+      else this.startRead(r.who, h, r.options, stretched);
     };
-    const p = this.patient = this.makePatient(r.who, h, W + 250);
+    const afterExtend = () => (stretched ? this.stretch(r.who, h, begin) : begin());
     this.phase = 'busy';
-    this.walk(p, QUEUE_X, () => {
+    this.patient = this.enter(r.who);
+    this.walk(this.patient, QUEUE_X, () => {
       if (value(h) > 1 && !this.extended) {
-        if (r.kind === 'read') this.extend(begin, false);
-        else this.giraffeEvent(r.who, begin);
-      } else begin();
+        if (r.kind === 'read' || stretched) this.extend(afterExtend, false);
+        else this.giraffeEvent(r.who, afterExtend);
+      } else afterExtend();
     });
+  }
+
+  /**
+   * Where the patient comes from: the doctor steps away from her place herself,
+   * someone already on the growth wall walks back from it, everyone else comes from the right.
+   */
+  private enter(who: PatientId) {
+    if (who === 'heron') {
+      this.heron.setVisible(false);
+      this.heronTag.setVisible(false);
+      return this.makePatient(who, HEIGHTS[who], DOC_X);
+    }
+    const onWall = this.wall.find(w => w.who === who);
+    if (!onWall) return this.makePatient(who, HEIGHTS[who], W + 250);
+    onWall.tag.destroy();
+    this.wall = this.wall.filter(w => w !== onWall);
+    this.layoutWall();
+    return onWall.img;
+  }
+
+  /** The giraffe stretches his neck in front of everyone: taller than usual. */
+  private stretch(who: PatientId, h: Frac, done: () => void) {
+    const p = this.patient!;
+    this.say(1, DOCTOR_LINES.stretch);
+    speak(DOCTOR_LINES.stretch);
+    this.look(p, who, 'happy');
+    this.tweens.add({
+      targets: p, scaleY: (value(h) * U) / p.height, duration: 1100, delay: 400, ease: 'Back.Out',
+      onComplete: () => this.time.delayedCall(900, () => { this.dropBubble(1); done(); }),
+    });
+  }
+
+  /** The doctor speaks from wherever she is: her own place, or under the chart when measured herself. */
+  private doctorSays(text: string) {
+    this.say(this.patient && this.r.kind !== 'sort' && this.r.who === 'heron' ? 1 : 0, text);
+  }
+
+  private dropBubble(i: number) {
+    this.bubbles[i]?.destroy();
   }
 
   private giraffeEvent(who: PatientId, done: () => void) {
@@ -286,7 +328,7 @@ export class Doctor extends Phaser.Scene {
 
   private startSet(who: PatientId, h: Frac) {
     const ask = doctorSetAsk(who, h);
-    this.say(0, ask);
+    this.doctorSays(ask);
     speak(ask);
     this.barK = this.maxK;
     this.drawBar();
@@ -296,8 +338,8 @@ export class Doctor extends Phaser.Scene {
     if (this.level.guide) this.guide.point(BAR_END + 18, yOf(this.barK / this.level.ticks) - 30, 'top');
   }
 
-  private startRead(who: PatientId, h: Frac, options: Frac[]) {
-    const ask = doctorReadAsk(who);
+  private startRead(who: PatientId, h: Frac, options: Frac[], stretched = false) {
+    const ask = doctorReadAsk(who, stretched);
     this.say(0, ask);
     speak(ask);
     this.walk(this.patient!, SPOT_X, () => {
@@ -313,7 +355,7 @@ export class Doctor extends Phaser.Scene {
           this.phase = 'answer';
           this.guide.say('Планка на макушке. Какой рост?');
           Phaser.Utils.Array.Shuffle([...options]).forEach((o, i) => {
-            const b = new Button(this, SPOT_X + (i - 1) * 240, BTN_Y, str(o), () => this.pickHeight(o, b), { w: 210, h: 92, size: 44 });
+            const b = new Button(this, SPOT_X + (i - 1) * 240, BTN_Y, o.n === o.d ? '1' : str(o), () => this.pickHeight(o, b), { w: 210, h: 92, size: 44 });
             this.buttons.push(b);
           });
         },
@@ -360,7 +402,7 @@ export class Doctor extends Phaser.Scene {
         const g = this.marks.clear();
         g.lineStyle(6, C.terra);
         for (let y = yOf(value(h)); y > yOf(bar) + 6; y -= 22) g.lineBetween(SPOT_X + 90, y, SPOT_X + 90, Math.max(yOf(bar) + 6, y - 12));
-        this.say(0, DOCTOR_LINES.gap);
+        this.doctorSays(DOCTOR_LINES.gap);
         this.mistake(explain, [DOCTOR_LINES.gap, spoken]);
       }
       this.time.delayedCall(2000, () => {
@@ -390,15 +432,28 @@ export class Doctor extends Phaser.Scene {
 
   /** Right height: the doctor writes it down and the patient goes to the growth wall. */
   private measured(who: PatientId, h: Frac) {
+    const stretched = !sameValue(h, HEIGHTS[who]);
     const same = this.wall.find(w => w.who !== who && sameValue(HEIGHTS[w.who], h));
     const written = value(h) > 1 ? mixed(h) : value(h) === 1 ? '1 домик' : `${str(h)} домика`;
-    const screen = `Верно! ${PATIENTS[who].name}: ${written}.${same ? ` ${DOCTOR_LINES.same(same.who)}` : ''}`;
+    const name = stretched ? `${PATIENTS[who].name} с вытянутой шеей` : PATIENTS[who].name;
+    const screen = `Верно! ${name}: ${written}.${same ? ` ${DOCTOR_LINES.same(same.who)}` : ''}`;
     const spoken = `Верно! ${doctorExplain(h, this.level.ticks, true)}${same ? ` ${DOCTOR_LINES.same(same.who)}` : ''}`;
     this.look(this.patient, who, 'happy');
     this.success(screen, spoken);
     const p = this.patient!;
     this.patient = undefined;
-    this.toWall(who, h, p);
+    if (who === 'heron') {
+      // The doctor goes back to her place; she is not a patient on the wall.
+      this.walk(p, DOC_X, () => {
+        p.destroy();
+        this.heron.setVisible(true).setTexture('heron-happy');
+        this.heronTag.setVisible(true);
+      }, 1300);
+      return;
+    }
+    // The neck relaxes before he walks back to the wall, where he stands at his usual height.
+    if (stretched) this.tweens.add({ targets: p, scaleY: (value(HEIGHTS[who]) * U) / p.height, duration: 400, delay: 1000 });
+    this.toWall(who, HEIGHTS[who], p);
   }
 
   private toWall(who: PatientId, h: Frac, img: Phaser.GameObjects.Image) {

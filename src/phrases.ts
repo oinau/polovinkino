@@ -123,7 +123,8 @@ export function allPhrases(): Phrase[] {
         continue;
       }
       const h = heightOf(r);
-      add(r.kind === 'set' ? doctorSetAsk(r.who, h) : doctorReadAsk(r.who), 'heron', `${where}, задание`);
+      const stretched = h.n * HEIGHTS[r.who].d !== HEIGHTS[r.who].n * h.d;
+      add(r.kind === 'set' ? doctorSetAsk(r.who, h) : doctorReadAsk(r.who, stretched), 'heron', `${where}, задание`);
       const why = doctorExplain(h, lv.ticks, true);
       add(why, 'narrator', `${where}, ошибка`);
       add(`Верно! ${why}`, 'narrator', `${where}, верно`);
@@ -136,6 +137,7 @@ export function allPhrases(): Phrase[] {
   add(DOCTOR_LINES.gap, 'heron', 'Доктор, планка высоко');
   add(DOCTOR_LINES.giraffeWow, 'giraffe', 'Доктор, жираф не влез');
   add(DOCTOR_LINES.extend, 'heron', 'Доктор, жираф не влез');
+  add(DOCTOR_LINES.stretch, 'giraffe', 'Доктор, жираф вытягивает шею');
   DOCTOR_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Доктор, итог'));
 
   return list;

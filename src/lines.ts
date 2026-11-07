@@ -258,8 +258,11 @@ export const mixed = (h: Frac) => `${str(h)} = 1 ${str({ n: h.n - h.d, d: h.d })
 /** «одна четвёртая домика», «ровно один домик» */
 export const heightWords = (h: Frac) => (isOne(h) ? 'ровно один домик' : `${words(h)} домика`);
 
-export const doctorSetAsk = (who: PatientId, h: Frac) => `Рост ${PATIENTS[who].gen} — ${heightWords(h)}. Поставь планку!`;
-export const doctorReadAsk = (who: PatientId) => `Какой рост у ${PATIENTS[who].gen}?`;
+export const doctorSetAsk = (who: PatientId, h: Frac) =>
+  who === 'heron' ? `Теперь измерь меня! Мой рост — ${heightWords(h)}. Поставь планку!` : `Рост ${PATIENTS[who].gen} — ${heightWords(h)}. Поставь планку!`;
+/** `stretched`: the giraffe has stretched his neck and is taller than usual. */
+export const doctorReadAsk = (who: PatientId, stretched = false) =>
+  stretched ? `${PATIENTS[who].name} вытянул шею. Какой у него теперь рост?` : `Какой рост у ${PATIENTS[who].gen}?`;
 export const doctorSortAsk = (order: 'asc' | 'desc') =>
   order === 'asc' ? 'Расставь всех по росту: нажимай по очереди, от самого низкого до самого высокого.'
     : 'Расставь всех по росту: нажимай по очереди, от самого высокого до самого низкого.';
@@ -291,6 +294,7 @@ export const DOCTOR_LINES = {
   gap: 'Планка висит над головой.',
   giraffeWow: 'Ой! Я что, выше домика?!',
   extend: 'Не беда! Достроим ростомер.',
+  stretch: 'Смотрите, я умею вытягивать шею!',
   same: (who: PatientId) => `Ростом как ${PATIENTS[who].name}!`,
 };
 export const DOCTOR_NOTES = ['', 'Все измерены! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Доктор Цапля довольна.', 'Ни одной ошибки! Самый точный ростомер в городе!'];
