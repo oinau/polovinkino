@@ -22,7 +22,7 @@ export const SPOTS: Spot[] = [
   { key: 'house-pizza', x: 340, y: 850, name: 'Пиццерия «Кусочек»', place: 'pizza', scale: 0.92 },
   { key: 'house-gazebo', x: 980, y: 790, name: 'Беседка спорщиков', place: 'gnomes', scale: 0.92 },
   { key: 'house-clock', x: 1620, y: 850, name: 'Площадь с часами', place: 'clock', scale: 0.92 },
-  { key: 'house-pier', x: 2280, y: 860, name: 'Пристань', scale: 1.3 },
+  { key: 'house-pier', x: 2280, y: 860, name: 'Пристань', place: 'pier', scale: 0.92 },
   { key: 'house-doctor', x: 3060, y: 800, name: 'Кабинет доктора', scale: 1.3 },
   { key: 'house-potion', x: 3680, y: 760, name: 'Зельеварня', scale: 1.3 },
   { key: 'house-courier', x: 4280, y: 830, name: 'Курьеры', scale: 1.3 },

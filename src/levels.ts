@@ -189,3 +189,58 @@ export const CLOCK_LEVELS: ClockLevel[] = [
     ],
   },
 ];
+
+// ---------- pier: captain Sardina shares out the treasure ----------
+export type CrewId = 'kok' | 'bocman' | 'shturman' | 'rumb';
+
+export type PierRound =
+  /** Deal the coins into equal piles, then give away `frac.n` piles of `frac.d`. */
+  | { kind: 'deal'; who: CrewId; total: number; frac: Frac }
+  /** How many coins is `frac` of `total`? */
+  | { kind: 'count'; who: CrewId; total: number; frac: Frac; options: number[] }
+  /** `frac` (one pile) was `part` coins: how many were in the chest? */
+  | { kind: 'whole'; who: CrewId; part: number; frac: Frac; options: number[] };
+
+export interface PierLevel {
+  name: string;
+  intro: string;
+  /** Arrow points at the next pile while dealing; the pick hint names the number of piles. */
+  guide: boolean;
+  rounds: PierRound[];
+}
+
+const deal = (who: CrewId, total: number, frac: Frac): PierRound => ({ kind: 'deal', who, total, frac });
+
+export const PIER_LEVELS: PierLevel[] = [
+  {
+    name: 'Раздели клад',
+    intro: 'Капитан Сардина привезла сундук монет. Разложи монеты в равные кучки — по одной монете в каждую по очереди — и отдай, сколько просят.',
+    guide: true,
+    rounds: [deal('bocman', 6, f(1, 2)), deal('kok', 9, f(1, 3)), deal('rumb', 8, f(1, 4)), deal('shturman', 12, f(1, 3)), deal('kok', 10, f(1, 2))],
+  },
+  {
+    name: 'Несколько кучек',
+    intro: 'Теперь просят больше одной части: две третьих — это две кучки из трёх. Раздели клад и отдай нужные кучки.',
+    guide: false,
+    rounds: [deal('bocman', 9, f(2, 3)), deal('shturman', 8, f(3, 4)), deal('kok', 12, f(2, 3)), deal('bocman', 12, f(3, 4)), deal('rumb', 12, f(5, 6))],
+  },
+  {
+    name: 'В уме',
+    intro: 'Монеты раскладывать не надо: посчитай в уме и выбери ответ. А потом проверим!',
+    guide: false,
+    rounds: [
+      { kind: 'count', who: 'kok', total: 12, frac: f(1, 3), options: [3, 4, 6] },
+      { kind: 'count', who: 'rumb', total: 12, frac: f(1, 4), options: [3, 4, 8] },
+      { kind: 'count', who: 'bocman', total: 9, frac: f(2, 3), options: [3, 6, 7] },
+      { kind: 'whole', who: 'shturman', part: 4, frac: f(1, 3), options: [7, 8, 12] },
+      { kind: 'whole', who: 'kok', part: 5, frac: f(1, 2), options: [7, 10, 15] },
+    ],
+  },
+];
+
+/** Total coins in the chest and the right answer in coins. */
+export function pierNumbers(r: PierRound): { total: number; pile: number; answer: number } {
+  if (r.kind === 'whole') return { total: r.part * r.frac.d, pile: r.part, answer: r.part * r.frac.d };
+  const pile = r.total / r.frac.d;
+  return { total: r.total, pile, answer: pile * r.frac.n };
+}

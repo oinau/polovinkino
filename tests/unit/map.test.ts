@@ -16,7 +16,8 @@ describe('town map', () => {
     expect(nextSpot(SPOTS, doneSet())?.place).toBe('pizza');
     expect(nextSpot(SPOTS, doneSet('pizza'))?.place).toBe('gnomes');
     expect(nextSpot(SPOTS, doneSet('pizza', 'clock'))?.place).toBe('gnomes');
-    expect(nextSpot(SPOTS, doneSet('pizza', 'gnomes', 'clock'))).toBeNull();
+    expect(nextSpot(SPOTS, doneSet('pizza', 'gnomes', 'clock'))?.place).toBe('pier');
+    expect(nextSpot(SPOTS, doneSet('pizza', 'gnomes', 'clock', 'pier'))).toBeNull();
   });
 
   it('scroll stays inside the world', () => {

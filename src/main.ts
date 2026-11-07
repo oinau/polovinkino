@@ -9,6 +9,7 @@ import { Town } from './scenes/Town';
 import { Pizzeria } from './scenes/Pizzeria';
 import { Gnomes } from './scenes/Gnomes';
 import { Clock } from './scenes/Clock';
+import { Pier } from './scenes/Pier';
 
 async function start() {
   // Canvas text needs the font (with Cyrillic glyphs) ready before the first draw.
@@ -27,7 +28,7 @@ async function start() {
       width: W,
       height: H,
     },
-    scene: [Boot, Town, Pizzeria, Gnomes, Clock],
+    scene: [Boot, Town, Pizzeria, Gnomes, Clock, Pier],
   });
   if (import.meta.env.DEV) Object.assign(window, { __game: game });
 }

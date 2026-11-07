@@ -1,7 +1,7 @@
 // Everything the characters say. Kept apart from the scenes so the voice studio
 // can list every spoken phrase for recording.
 import type { CustomerId } from './art';
-import type { Dispute } from './levels';
+import { pierNumbers, type CrewId, type Dispute, type PierRound } from './levels';
 import { capitalize, compare, str, words, type Frac } from './fractions';
 import { hourPart, meetWords, minuteMark, minutesWords, timeWords } from './time';
 
@@ -117,7 +117,7 @@ export function explainDispute(d: Dispute, spoken = false) {
 export const VOICE_SAMPLE = 'Привет! Я буду читать заказы. Мне две третьих пиццы!';
 
 // ---------- heroes: name tags and the one-time introduction card ----------
-export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka';
+export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka' | 'pier';
 
 export const HEROES: Record<HeroId, { name: string; tag: string; textures: string[]; intro: string }> = {
   pyh: {
@@ -144,6 +144,10 @@ export const HEROES: Record<HeroId, { name: string; tag: string; textures: strin
     name: 'Носочка', tag: 'Носочка', textures: ['nosochka-happy'],
     intro: 'Это Носочка — пара Тихона. Она любит бантики и всегда приходит вовремя. Наконец-то они снова вместе!',
   },
+  pier: {
+    name: 'Капитан Сардина и попугай Румб', tag: '', textures: ['sardina-happy', 'rumb-happy'],
+    intro: 'Это капитан Сардина и её попугай Румб. Они привезли из плавания сундук монет. Помоги поделить клад честно, чтобы никто в команде не обиделся!',
+  },
   gnomes: {
     name: 'Усач и Очкарик', tag: '', textures: ['usach-happy', 'ochkarik-happy'],
     intro: 'Это гномы Усач и Очкарик. Они дружат с детства и спорят с утра до вечера — особенно о том, кому больше пирога.',
@@ -165,3 +169,52 @@ export function clockWaitExplain(now: number, meet: number) {
   const part = hourPart(diff);
   return `Сейчас ${timeWords(now)}, встреча ${meetWords(meet)}: ждать ${minutesWords(diff)}.${part ? ` Это ${part.words}.` : ''}`;
 }
+
+// ---------- pier ----------
+export const CREW: Record<CrewId, { name: string; dat: string }> = {
+  kok: { name: 'Кок', dat: 'коку' },
+  bocman: { name: 'Боцман', dat: 'боцману' },
+  shturman: { name: 'Штурман', dat: 'штурману' },
+  rumb: { name: 'Румб', dat: 'попугаю Румбу' },
+};
+
+const plural = (n: number, one: string, few: string, many: string) => {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+};
+// A no-break space keeps «4 монеты» on one line in the bubbles.
+export const coinsWord = (n: number) => `${n}\u00A0${plural(n, 'монета', 'монеты', 'монет')}`;
+export const pilesWord = (n: number) => `${n}\u00A0${plural(n, 'кучка', 'кучки', 'кучек')}`;
+
+/** What the captain asks. */
+export function pierAsk(r: PierRound): string {
+  const dat = CREW[r.who].dat;
+  if (r.kind === 'deal') return `Отдай ${dat} ${words(r.frac, 'acc')} клада!`;
+  if (r.kind === 'count') return `В сундуке ${coinsWord(r.total)}. ${capitalize(dat)} — ${words(r.frac)} клада. Сколько это монет?`;
+  return `${CREW[r.who].name} получил ${words(r.frac, 'acc')} клада — ${coinsWord(r.part)}. Сколько монет было в сундуке?`;
+}
+
+/** Why the answer is what it is. `spoken` says fractions in words. */
+export function pierExplain(r: PierRound, spoken = false): string {
+  const { total, pile, answer } = pierNumbers(r);
+  const fr = spoken ? capitalize(words(r.frac)) : str(r.frac);
+  if (r.kind === 'whole') {
+    return `${fr} — это одна кучка, а всего кучек ${r.frac.d}. ${capitalize(pilesWord(r.frac.d))} по ${pile} — это ${coinsWord(total)}.`;
+  }
+  return `${capitalize(coinsWord(total))} на ${pilesWord(r.frac.d)} — по ${pile}. ${fr} — это ${pilesWord(r.frac.n)}, ${coinsWord(answer)}.`;
+}
+
+/** Hint while picking piles: how many piles to give. */
+export const pierPickHint = (r: PierRound) =>
+  `Отдать нужно ${words(r.frac, 'acc')}: ${pilesWord(r.frac.n)} из ${r.frac.d}. Выбери ${r.frac.n === 1 ? 'её' : 'их'} и нажми «Отдать».`;
+
+export const PIER_LINES = {
+  uneven: 'Кррра! Кучки разные — нечестно!',
+  unevenHint: 'Кучки должны быть одинаковыми. Клади по одной монете в каждую кучку по очереди.',
+  few: 'Маловато будет!',
+  many: 'Кррра! А команде что останется?',
+  right: 'Честно поделили! Кррра!',
+};
+export const PIER_NOTES = ['', 'Клад поделён! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Команда довольна.', 'Ни одной ошибки! Самый честный казначей на море!'];

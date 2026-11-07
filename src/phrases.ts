@@ -1,14 +1,14 @@
 // Every phrase the game can say aloud, generated from the level data, for the voice studio.
-import { CLOCK_LEVELS, GNOME_LEVELS, PIZZA_LEVELS } from './levels';
+import { CLOCK_LEVELS, GNOME_LEVELS, PIER_LEVELS, PIZZA_LEVELS } from './levels';
 import {
   CLOCK_ASK, CLOCK_FINALE, CLOCK_NOTES, GNOME_NOTES, HEROES, LINES, PIZZA_NOTES, REACTIONS, clockLetter, clockSetExplain,
-  clockWaitAsk, clockWaitExplain, explainDispute, gnomeClaims, orderLine,
+  clockWaitAsk, clockWaitExplain, explainDispute, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
 } from './lines';
 import { explainTime, timeWords } from './time';
 import { capitalize } from './fractions';
 import { phraseKey } from './voicekey';
 
-export type Speaker = 'narrator' | 'ekibas' | 'osya' | 'borovik' | 'usach' | 'ochkarik';
+export type Speaker = 'narrator' | 'ekibas' | 'osya' | 'borovik' | 'usach' | 'ochkarik' | 'sardina' | 'rumb';
 
 export const SPEAKERS: Record<Speaker, { name: string; color: string; rate: number }> = {
   narrator: { name: 'Ведущий', color: '#2E3A59', rate: 1 },
@@ -17,6 +17,8 @@ export const SPEAKERS: Record<Speaker, { name: string; color: string; rate: numb
   borovik: { name: 'Дед Боровик', color: '#6E7C45', rate: 0.85 },
   usach: { name: 'Гном Усач', color: '#B9553A', rate: 1.25 },
   ochkarik: { name: 'Гном Очкарик', color: '#5F6E3A', rate: 1.3 },
+  sardina: { name: 'Капитан Сардина', color: '#5E8A93', rate: 1 },
+  rumb: { name: 'Попугай Румб', color: '#D9734E', rate: 1.35 },
 };
 
 export interface Phrase {
@@ -88,6 +90,22 @@ export function allPhrases(): Phrase[] {
   });
   add(CLOCK_FINALE, 'narrator', 'Часы, Носочка пришла');
   CLOCK_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Часы, итог'));
+
+  PIER_LEVELS.forEach((lv, i) => {
+    const where = `Пристань, уровень ${i + 1}`;
+    add(lv.intro, 'narrator', `${where}, вступление`);
+    for (const r of lv.rounds) {
+      add(pierAsk(r), 'sardina', `${where}, просьба капитана`);
+      add(`Верно! ${pierExplain(r, true)}`, 'narrator', `${where}, верный ответ`);
+      if (r.kind !== 'deal') add(pierExplain(r, true), 'narrator', `${where}, ошибка`);
+    }
+  });
+  add(PIER_LINES.uneven, 'rumb', 'Пристань, кучки разные');
+  add(PIER_LINES.unevenHint, 'narrator', 'Пристань, кучки разные');
+  add(PIER_LINES.many, 'rumb', 'Пристань, отдали много');
+  add(PIER_LINES.right, 'rumb', 'Пристань, верно');
+  add(PIER_LINES.few, 'sardina', 'Пристань, отдали мало');
+  PIER_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Пристань, итог'));
 
   return list;
 }

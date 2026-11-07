@@ -241,10 +241,9 @@ function gazebo() {
     <rect x="20" y="266" width="260" height="26" rx="8" fill="${P.sand}" ${S} stroke-width="4"/>`);
 }
 
-function house(roof: string, prop: 'box' | 'boat' | 'flask' | 'doctor') {
+function house(roof: string, prop: 'box' | 'flask' | 'doctor') {
   const props = {
     box: `<rect x="196" y="240" width="54" height="44" fill="${P.mustard}" ${S} stroke-width="3"/><path d="M196 254 h54 M223 240 v14" ${S} stroke-width="3"/>`,
-    boat: `<path d="M180 262 h86 l-14 24 h-58 z" fill="${P.terra}" ${S} stroke-width="3" stroke-linejoin="round"/><path d="M222 262 V214 l28 40 z" fill="${P.paper}" ${S} stroke-width="3" stroke-linejoin="round"/>`,
     flask: `<path d="M214 222 v20 l-22 38 h62 l-22 -38 v-20 z" fill="${P.olive}" ${S} stroke-width="3" stroke-linejoin="round"/><circle cx="223" cy="210" r="7" fill="${P.paper}" ${S} stroke-width="2.5"/>`,
     // Height chart on the outside wall and a red cross on the roof.
     doctor: `<rect x="212" y="130" width="22" height="160" fill="${P.paper}" ${S} stroke-width="3"/>
@@ -281,6 +280,80 @@ function monsterHouse() {
     <path d="M246 40 q8 -10 16 0 q8 -10 16 0 q-8 3 -16 11 q-8 -8 -16 -11z" fill="${P.navy}"/>`);
 }
 
+// ---------- Pier: captain Sardina and her parrot Rumb ----------
+function sardina(mood: Mood) {
+  const eyes = {
+    normal: `<circle cx="50" cy="72" r="10" fill="#fff" ${S} stroke-width="3"/><circle cx="52" cy="73" r="5" fill="${P.navy}"/>
+             <circle cx="80" cy="72" r="10" fill="#fff" ${S} stroke-width="3"/><circle cx="82" cy="73" r="5" fill="${P.navy}"/>`,
+    happy: `<path d="M41 74 q9 -11 18 0 M71 74 q9 -11 18 0" fill="none" ${S} stroke-width="4" stroke-linecap="round"/>`,
+    angry: `<circle cx="50" cy="74" r="9" fill="#fff" ${S} stroke-width="3"/><circle cx="52" cy="76" r="4.5" fill="${P.navy}"/>
+            <circle cx="80" cy="74" r="9" fill="#fff" ${S} stroke-width="3"/><circle cx="82" cy="76" r="4.5" fill="${P.navy}"/>
+            <path d="M39 60 L60 66 M91 60 L70 66" ${S} stroke-width="4" stroke-linecap="round"/>`,
+  }[mood];
+  const mouth = {
+    normal: `<path d="M56 90 Q65 98 74 90" fill="none" ${S} stroke-width="3.5" stroke-linecap="round"/>`,
+    happy: `<path d="M53 87 Q65 104 77 87 Z" fill="${P.navy}" ${S} stroke-width="3" stroke-linejoin="round"/>`,
+    angry: `<path d="M56 95 Q65 87 74 95" fill="none" ${S} stroke-width="3.5" stroke-linecap="round"/>`,
+  }[mood];
+  return svg([0, 4, 130, 216], `
+    <path d="M24 118 Q2 128 7 152 Q19 140 30 140 Z" fill="${P.water}" ${S} stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M106 118 Q128 128 123 152 Q111 140 100 140 Z" fill="${P.water}" ${S} stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M58 186 Q40 198 28 216 Q48 212 65 204 Q82 212 102 216 Q90 198 72 186 Z" fill="${P.water}" ${S} stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M65 40 C105 40 112 90 108 130 C104 165 88 185 65 192 C42 185 26 165 22 130 C18 90 25 40 65 40 Z" fill="${P.water}" ${S} stroke-width="4"/>
+    <path d="M65 104 C88 104 95 132 92 155 C88 175 78 184 65 186 C52 184 42 175 38 155 C35 132 42 104 65 104 Z" fill="${P.paper}" ${S} stroke-width="3"/>
+    <path d="M44 122 H86 M39 140 H91 M40 158 H90 M47 174 H83" stroke="${P.terra}" stroke-width="6"/>
+    <path d="M65 104 C88 104 95 132 92 155 C88 175 78 184 65 186 C52 184 42 175 38 155 C35 132 42 104 65 104 Z" fill="none" ${S} stroke-width="3"/>
+    <circle cx="38" cy="88" r="6" fill="${P.terra}" opacity="0.35"/><circle cx="92" cy="88" r="6" fill="${P.terra}" opacity="0.35"/>
+    ${eyes}${mouth}
+    <path d="M34 46 Q36 12 65 10 Q94 12 96 46 Z" fill="${P.navy}" ${S} stroke-width="3"/>
+    <rect x="30" y="38" width="70" height="12" rx="4" fill="${P.paper}" ${S} stroke-width="3"/>
+    <path d="M32 50 Q65 66 98 50 L98 47 Q65 58 32 47 Z" fill="${P.navy}" ${S} stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="65" cy="27" r="7" fill="${P.mustard}" ${S} stroke-width="2.5"/>`);
+}
+
+function rumb(mood: Mood) {
+  const eye = {
+    normal: `<circle cx="72" cy="56" r="5" fill="${P.navy}"/>`,
+    happy: `<path d="M66 58 q6 -8 12 0" fill="none" ${S} stroke-width="3.5" stroke-linecap="round"/>`,
+    angry: `<circle cx="72" cy="58" r="4.5" fill="${P.navy}"/><path d="M62 46 L82 52" ${S} stroke-width="4" stroke-linecap="round"/>`,
+  }[mood];
+  const crest = mood === 'angry'
+    ? `<path d="M46 34 Q34 8 50 2 Q56 18 58 30 Q62 0 80 4 Q72 22 66 32 Z" fill="${P.mustard}" ${S} stroke-width="3" stroke-linejoin="round"/>`
+    : `<path d="M50 32 Q44 10 56 6 Q58 20 60 30 Q64 8 76 10 Q70 24 66 32 Z" fill="${P.mustard}" ${S} stroke-width="3" stroke-linejoin="round"/>`;
+  const beak = mood === 'happy'
+    ? `<path d="M82 60 Q102 58 98 78 Q92 70 82 70 Z" fill="${P.mustard}" ${S} stroke-width="3" stroke-linejoin="round"/><path d="M82 74 Q92 78 94 86 Q84 88 80 80 Z" fill="${P.mustardDark}" ${S} stroke-width="3" stroke-linejoin="round"/>`
+    : `<path d="M80 62 Q100 62 96 82 Q90 74 80 74 Z" fill="${P.mustard}" ${S} stroke-width="3" stroke-linejoin="round"/><path d="M80 74 Q88 76 90 80 Q84 84 80 80 Z" fill="${P.mustardDark}" ${S} stroke-width="3" stroke-linejoin="round"/>`;
+  return svg([10, 0, 100, 200], `
+    <path d="M55 140 L44 196 L62 192 L72 140 Z" fill="${P.olive}" ${S} stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M50 160 v14 M46 176 h10 M68 160 v14 M64 176 h10" ${S} stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="60" cy="115" rx="34" ry="45" fill="${P.terra}" ${S} stroke-width="4"/>
+    <ellipse cx="64" cy="124" rx="20" ry="30" fill="${P.cheese}"/>
+    <path d="M34 95 Q18 130 40 162 Q56 140 52 100 Z" fill="${P.olive}" ${S} stroke-width="3.5" stroke-linejoin="round"/>
+    ${crest}
+    <circle cx="60" cy="58" r="30" fill="${P.terra}" ${S} stroke-width="4"/>
+    <ellipse cx="71" cy="57" rx="13" ry="15" fill="${P.paper}" ${S} stroke-width="3"/>
+    ${eye}${beak}`);
+}
+
+/** The pier: a ship with a sail split into three stripes, a jetty and a chest. */
+function pierShip() {
+  return svg([0, 0, 300, 300], `
+    <rect x="0" y="252" width="300" height="48" fill="${P.water}"/>
+    <path d="M0 252 H300" ${S} stroke-width="4"/>
+    <path d="M150 220 V40" ${S} stroke-width="7" stroke-linecap="round"/>
+    <path d="M150 40 l40 12 l-40 12 z" fill="${P.mustard}" ${S} stroke-width="3" stroke-linejoin="round"/>
+    <path d="M100 76 H200 V196 H100 Z" fill="${P.paper}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    <rect x="100" y="116" width="100" height="40" fill="${P.terra}"/>
+    <path d="M100 76 H200 V196 H100 Z M100 116 H200 M100 156 H200" fill="none" ${S} stroke-width="4"/>
+    <path d="M62 214 H262 L232 268 H96 Z" fill="${P.terra}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    <path d="M78 236 H248" ${S} stroke-width="3"/>
+    <circle cx="120" cy="250" r="7" fill="${P.paper}" ${S} stroke-width="3"/><circle cx="160" cy="250" r="7" fill="${P.paper}" ${S} stroke-width="3"/><circle cx="200" cy="250" r="7" fill="${P.paper}" ${S} stroke-width="3"/>
+    <rect x="0" y="236" width="80" height="16" fill="${P.mustardDark}" ${S} stroke-width="3"/>
+    <path d="M14 252 V292 M62 252 V292" ${S} stroke-width="6"/>
+    <rect x="18" y="206" width="42" height="30" rx="4" fill="${P.mustard}" ${S} stroke-width="3"/>
+    <path d="M18 218 H60 M39 214 v8" ${S} stroke-width="3"/>`);
+}
+
 function clockTower() {
   let ticks = '';
   for (let i = 0; i < 12; i++) {
@@ -314,12 +387,14 @@ export function allArt(): Art[] {
     list.push({ key: `usach-${m}`, svg: gnome('usach', m), scale: 4.2 });
     list.push({ key: `ochkarik-${m}`, svg: gnome('ochkarik', m), scale: 4.2 });
     list.push({ key: `nosochka-${m}`, svg: nosochka(m), scale: 4.2 });
+    list.push({ key: `sardina-${m}`, svg: sardina(m), scale: 2.2 });
+    list.push({ key: `rumb-${m}`, svg: rumb(m), scale: 1.5 });
   }
   list.push({ key: 'house-pizza', svg: pizzeriaHouse(), scale: 1.6 });
   list.push({ key: 'house-gazebo', svg: gazebo(), scale: 1.6 });
   list.push({ key: 'house-clock', svg: clockTower(), scale: 1.6 });
   list.push({ key: 'house-courier', svg: house(P.terra, 'box'), scale: 1.1 });
-  list.push({ key: 'house-pier', svg: house(P.olive, 'boat'), scale: 1.1 });
+  list.push({ key: 'house-pier', svg: pierShip(), scale: 1.6 });
   list.push({ key: 'house-potion', svg: house(P.mustard, 'flask'), scale: 1.1 });
   list.push({ key: 'house-doctor', svg: house(P.paper, 'doctor'), scale: 1.1 });
   list.push({ key: 'house-monsters', svg: monsterHouse(), scale: 1.1 });

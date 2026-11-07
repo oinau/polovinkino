@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
 import { C, HEX, W, H } from '../theme';
 import { store, type Place } from '../store';
-import { CLOCK_LEVELS, GNOME_LEVELS, PIZZA_LEVELS } from '../levels';
+import { CLOCK_LEVELS, GNOME_LEVELS, PIER_LEVELS, PIZZA_LEVELS } from '../levels';
 import { Button, label, iconButton, modal, starShape } from '../ui';
 import { nextVoice, ruVoices, sfx, voiceName } from '../audio';
 import { FAR_FACTOR, MID_FACTOR, RIVER, ROAD_END, SPOTS, WORLD_W, clampScroll, maxScroll, nextSpot, scrollTo, type Spot } from '../map';
 
-const LEVELS: Record<Place, { name: string }[]> = { pizza: PIZZA_LEVELS, gnomes: GNOME_LEVELS, clock: CLOCK_LEVELS };
-const SCENE: Record<Place, string> = { pizza: 'Pizzeria', gnomes: 'Gnomes', clock: 'Clock' };
+const LEVELS: Record<Place, { name: string }[]> = { pizza: PIZZA_LEVELS, gnomes: GNOME_LEVELS, clock: CLOCK_LEVELS, pier: PIER_LEVELS };
+const SCENE: Record<Place, string> = { pizza: 'Pizzeria', gnomes: 'Gnomes', clock: 'Clock', pier: 'Pier' };
 
 /** A place is done when every level has at least one star. */
 const done = (p: Place) => LEVELS[p].every((_, i) => store.stars(p, i) > 0);

@@ -13,7 +13,7 @@ test('«Начать заново» clears stars, coins and introductions but ke
   });
   await expect.poll(async () => (await saved(page)).coins).toBe(0);
   const s = await saved(page);
-  expect(s.stars).toEqual({ pizza: [], gnomes: [], clock: [] });
+  expect(s.stars).toEqual({ pizza: [], gnomes: [], clock: [], pier: [] });
   expect(s.met).toEqual([]);
   expect(s.voice).toBe('Anna');
   expect(s.sound).toBe(false);

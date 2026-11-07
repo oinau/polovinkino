@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
-export const ALL_HEROES = ['pyh', 'ekibas', 'osya', 'tikhon', 'borovik', 'gnomes', 'nosochka'];
+export const ALL_HEROES = ['pyh', 'ekibas', 'osya', 'tikhon', 'borovik', 'gnomes', 'nosochka', 'pier'];
 
 /** Fresh browser state: sound off, optional progress and introductions. */
 export async function openGame(page: Page, save: Record<string, unknown> = {}) {
