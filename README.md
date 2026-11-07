@@ -27,6 +27,18 @@ npx playwright install chromium   # один раз, браузер для ав�
 npm run test:e2e                  # браузерные тесты (Playwright), пару минут
 ```
 
+Браузерные тесты сами запускают Vite на порту **5199** (не мешает `npm run dev` на 5173);
+если порт занят чужим процессом, освободите его.
+
+Один файл или один тест:
+
+```sh
+npx vitest run tests/unit/levels.test.ts      # один файл юнит-тестов
+npx vitest run -t "words"                     # тесты, в названии которых есть «words»
+npx playwright test tests/e2e/gnomes.spec.ts  # один файл браузерных тестов
+npx playwright test -g "shift 5"              # браузерные тесты по части названия
+```
+
 Что именно проверяется и чек-лист визуальной проверки — в [`adr/testing.md`](adr/testing.md).
 
 ### Сбросить прогресс
