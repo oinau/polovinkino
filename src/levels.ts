@@ -244,3 +244,87 @@ export function pierNumbers(r: PierRound): { total: number; pile: number; answer
   const pile = r.total / r.frac.d;
   return { total: r.total, pile, answer: pile * r.frac.n };
 }
+
+// ---------- doctor: heights in «houses» on the height chart ----------
+export type PatientId = 'borovik' | 'tikhon' | 'ekibas' | 'pyh' | 'osya' | 'usach' | 'sardina' | 'giraffe' | 'heron';
+
+/** Everyone's height in houses: the same in every level, so the growth wall stays consistent. */
+export const HEIGHTS: Record<PatientId, Frac> = {
+  usach: f(1, 6),
+  borovik: f(1, 4),
+  tikhon: f(1, 4),
+  osya: f(1, 3),
+  ekibas: f(1, 2),
+  sardina: f(2, 3),
+  pyh: f(3, 4),
+  heron: f(1, 1),
+  giraffe: f(5, 4),
+};
+
+export type DoctorRound =
+  /** Set the bar to the patient's height, then measure. `h` overrides the usual height. */
+  | { kind: 'set'; who: PatientId; h?: Frac }
+  /** The patient stands under the bar: pick the height. */
+  | { kind: 'read'; who: PatientId; options: Frac[]; h?: Frac }
+  /** Tap everyone in order of height. Equal heights may go in either order. */
+  | { kind: 'sort'; who: PatientId[]; order: 'asc' | 'desc' };
+
+export interface DoctorLevel {
+  name: string;
+  intro: string;
+  /** Divisions of one house on the chart; 0 hides them (sorting by the name tags). */
+  ticks: number;
+  guide: boolean;
+  rounds: DoctorRound[];
+}
+
+export const DOCTOR_LEVELS: DoctorLevel[] = [
+  {
+    name: 'Половинки и четверти',
+    intro: 'Жители пришли к доктору Цапле измерить рост. Ростомер на стене — от земли до конька крыши, это один домик. Опусти планку на нужную высоту и нажми «Мерить».',
+    ticks: 4,
+    guide: true,
+    rounds: [
+      { kind: 'set', who: 'borovik' },
+      { kind: 'set', who: 'ekibas' },
+      { kind: 'set', who: 'pyh' },
+      { kind: 'read', who: 'tikhon', options: [f(1, 4), f(1, 2), f(3, 4)] },
+    ],
+  },
+  {
+    name: 'Трети и шестые',
+    intro: 'Теперь домик на ростомере разделён на шесть частей. Одна третья — это сколько шестых?',
+    ticks: 6,
+    guide: false,
+    rounds: [
+      { kind: 'set', who: 'osya' },
+      { kind: 'read', who: 'usach', options: [f(1, 6), f(1, 3), f(1, 2)] },
+      { kind: 'set', who: 'sardina' },
+      { kind: 'read', who: 'ekibas', options: [f(1, 3), f(1, 2), f(2, 3)] },
+    ],
+  },
+  {
+    name: 'Выше домика',
+    intro: 'Сегодня на приём пришёл жираф. Интересно, он поместится на ростомере?',
+    ticks: 4,
+    guide: false,
+    rounds: [
+      { kind: 'set', who: 'giraffe' },
+      { kind: 'set', who: 'heron' },
+      { kind: 'read', who: 'giraffe', h: f(3, 2), options: [f(1, 1), f(5, 4), f(3, 2)] },
+    ],
+  },
+  {
+    name: 'Кто выше?',
+    intro: 'Рост всех жителей уже записан. Расставь их по росту: нажимай на них по очереди.',
+    ticks: 0,
+    guide: false,
+    rounds: [
+      { kind: 'sort', who: ['pyh', 'borovik', 'ekibas', 'osya'], order: 'asc' },
+      { kind: 'sort', who: ['sardina', 'giraffe', 'usach', 'heron'], order: 'desc' },
+      { kind: 'sort', who: ['osya', 'tikhon', 'ekibas', 'borovik'], order: 'asc' },
+    ],
+  },
+];
+
+export const heightOf = (r: { who: PatientId; h?: Frac }) => r.h ?? HEIGHTS[r.who];

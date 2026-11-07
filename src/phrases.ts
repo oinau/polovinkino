@@ -1,14 +1,15 @@
 // Every phrase the game can say aloud, generated from the level data, for the voice studio.
-import { CLOCK_LEVELS, GNOME_LEVELS, PIER_LEVELS, PIZZA_LEVELS } from './levels';
+import { CLOCK_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, HEIGHTS, PIER_LEVELS, PIZZA_LEVELS, heightOf } from './levels';
 import {
   CLOCK_ASK, CLOCK_FINALE, CLOCK_NOTES, GNOME_NOTES, HEROES, LINES, PIZZA_NOTES, REACTIONS, clockLetter, clockSetExplain,
-  clockWaitAsk, clockWaitExplain, explainDispute, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
+  clockWaitAsk, clockWaitExplain, DOCTOR_LINES, DOCTOR_NOTES, PATIENTS, doctorExplain, doctorReadAsk, doctorSetAsk, doctorSortAsk,
+  doctorSortExplain, explainDispute, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
 } from './lines';
 import { explainTime, timeWords } from './time';
 import { capitalize } from './fractions';
 import { phraseKey } from './voicekey';
 
-export type Speaker = 'narrator' | 'ekibas' | 'osya' | 'borovik' | 'usach' | 'ochkarik' | 'sardina' | 'rumb';
+export type Speaker = 'narrator' | 'ekibas' | 'osya' | 'borovik' | 'usach' | 'ochkarik' | 'sardina' | 'rumb' | 'heron' | 'giraffe';
 
 export const SPEAKERS: Record<Speaker, { name: string; color: string; rate: number }> = {
   narrator: { name: 'Ведущий', color: '#2E3A59', rate: 1 },
@@ -19,6 +20,8 @@ export const SPEAKERS: Record<Speaker, { name: string; color: string; rate: numb
   ochkarik: { name: 'Гном Очкарик', color: '#5F6E3A', rate: 1.3 },
   sardina: { name: 'Капитан Сардина', color: '#5E8A93', rate: 1 },
   rumb: { name: 'Попугай Румб', color: '#D9734E', rate: 1.35 },
+  heron: { name: 'Доктор Цапля', color: '#2E3A59', rate: 1 },
+  giraffe: { name: 'Жираф Жорж', color: '#C9973A', rate: 0.9 },
 };
 
 export interface Phrase {
@@ -106,6 +109,34 @@ export function allPhrases(): Phrase[] {
   add(PIER_LINES.right, 'rumb', 'Пристань, верно');
   add(PIER_LINES.few, 'sardina', 'Пристань, отдали мало');
   PIER_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Пристань, итог'));
+
+  DOCTOR_LEVELS.forEach((lv, i) => {
+    const where = `Доктор, уровень ${i + 1}`;
+    add(lv.intro, 'narrator', `${where}, вступление`);
+    for (const r of lv.rounds) {
+      if (r.kind === 'sort') {
+        add(doctorSortAsk(r.order), 'heron', `${where}, задание`);
+        add(r.order === 'asc' ? 'Верно! От самого низкого до самого высокого.' : 'Верно! От самого высокого до самого низкого.', 'narrator', `${where}, верно`);
+        for (const a of r.who) for (const b of r.who) {
+          if (HEIGHTS[a].n * HEIGHTS[b].d !== HEIGHTS[b].n * HEIGHTS[a].d) add(doctorSortExplain(a, b, r.order, true), 'narrator', `${where}, ошибка`);
+        }
+        continue;
+      }
+      const h = heightOf(r);
+      add(r.kind === 'set' ? doctorSetAsk(r.who, h) : doctorReadAsk(r.who), 'heron', `${where}, задание`);
+      const why = doctorExplain(h, lv.ticks, true);
+      add(why, 'narrator', `${where}, ошибка`);
+      add(`Верно! ${why}`, 'narrator', `${where}, верно`);
+      for (const other of Object.keys(PATIENTS) as (keyof typeof PATIENTS)[]) {
+        if (other !== r.who && HEIGHTS[other].n * h.d === h.n * HEIGHTS[other].d) add(`Верно! ${why} ${DOCTOR_LINES.same(other)}`, 'narrator', `${where}, верно (одинаковый рост)`);
+      }
+    }
+  });
+  add(DOCTOR_LINES.bonk, 'narrator', 'Доктор, планка низко');
+  add(DOCTOR_LINES.gap, 'heron', 'Доктор, планка высоко');
+  add(DOCTOR_LINES.giraffeWow, 'giraffe', 'Доктор, жираф не влез');
+  add(DOCTOR_LINES.extend, 'heron', 'Доктор, жираф не влез');
+  DOCTOR_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Доктор, итог'));
 
   return list;
 }

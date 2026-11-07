@@ -354,6 +354,73 @@ function pierShip() {
     <path d="M18 218 H60 M39 214 v8" ${S} stroke-width="3"/>`);
 }
 
+// ---------- Doctor: heron the doctor and George the giraffe ----------
+function heron(mood: Mood) {
+  const eyes = {
+    normal: `<circle cx="72" cy="62" r="3" fill="${P.navy}"/><circle cx="86" cy="62" r="3" fill="${P.navy}"/>`,
+    happy: `<path d="M68 63 q4 -5 8 0 M82 63 q4 -5 8 0" fill="none" ${S} stroke-width="2.5" stroke-linecap="round"/>`,
+    angry: `<circle cx="72" cy="63" r="3" fill="${P.navy}"/><circle cx="86" cy="63" r="3" fill="${P.navy}"/><path d="M65 52 L77 56 M93 52 L81 56" ${S} stroke-width="3" stroke-linecap="round"/>`,
+  }[mood];
+  const beak = mood === 'happy'
+    ? `<path d="M93 60 L138 62 L93 66 Z M93 70 L130 74 L93 74 Z" fill="${P.mustard}" ${S} stroke-width="2.5" stroke-linejoin="round"/>`
+    : `<path d="M93 60 L138 68 L93 74 Z" fill="${P.mustard}" ${S} stroke-width="2.5" stroke-linejoin="round"/><path d="M93 67 L130 68" ${S} stroke-width="2"/>`;
+  return svg([10, 18, 132, 282], `
+    <path d="M62 200 L58 292 M80 200 L84 292" ${S} stroke-width="5" stroke-linecap="round"/>
+    <path d="M44 293 H66 M76 293 H98" ${S} stroke-width="5" stroke-linecap="round"/>
+    <path d="M30 168 Q20 200 40 206 L50 190 Z" fill="${P.paper}" ${S} stroke-width="3" stroke-linejoin="round"/>
+    <ellipse cx="70" cy="176" rx="42" ry="34" fill="${P.paper}" ${S} stroke-width="4"/>
+    <path d="M44 166 Q70 196 102 170" fill="none" ${S} stroke-width="3"/>
+    <rect x="60" y="182" width="20" height="20" rx="3" fill="${P.paper}" ${S} stroke-width="2.5"/>
+    <path d="M70 186 v12 M64 192 h12" stroke="${P.terra}" stroke-width="4" stroke-linecap="round"/>
+    <path d="M74 150 C58 122 92 104 78 80" fill="none" ${S} stroke-width="22" stroke-linecap="round"/>
+    <path d="M74 150 C58 122 92 104 78 80" fill="none" stroke="${P.paper}" stroke-width="15" stroke-linecap="round"/>
+    <path d="M60 58 L36 50 M60 64 L40 64" ${S} stroke-width="4" stroke-linecap="round"/>
+    <circle cx="78" cy="64" r="20" fill="${P.paper}" ${S} stroke-width="4"/>
+    ${beak}
+    <circle cx="72" cy="62" r="7" fill="none" ${S} stroke-width="2.5"/><circle cx="86" cy="62" r="7" fill="none" ${S} stroke-width="2.5"/>
+    <path d="M79 62 h0" ${S} stroke-width="2.5"/>
+    ${eyes}
+    <path d="M60 48 Q78 36 96 48" fill="none" ${S} stroke-width="3"/>
+    <circle cx="78" cy="42" r="8" fill="${P.mustard}" ${S} stroke-width="2.5"/>`);
+}
+
+export type GiraffeMood = Mood | 'surprised';
+function giraffe(mood: GiraffeMood) {
+  const eyes = {
+    normal: `<circle cx="108" cy="46" r="4" fill="${P.navy}"/><circle cx="124" cy="45" r="4" fill="${P.navy}"/>`,
+    happy: `<path d="M103 47 q5 -6 10 0 M119 46 q5 -6 10 0" fill="none" ${S} stroke-width="3" stroke-linecap="round"/>`,
+    angry: `<circle cx="108" cy="47" r="4" fill="${P.navy}"/><circle cx="124" cy="46" r="4" fill="${P.navy}"/><path d="M100 36 L113 40 M132 35 L119 40" ${S} stroke-width="3" stroke-linecap="round"/>`,
+    surprised: `<circle cx="107" cy="44" r="8" fill="#fff" ${S} stroke-width="2.5"/><circle cx="107" cy="44" r="3" fill="${P.navy}"/>
+                <circle cx="125" cy="43" r="8" fill="#fff" ${S} stroke-width="2.5"/><circle cx="125" cy="43" r="3" fill="${P.navy}"/>
+                <path d="M99 30 q8 -6 16 0 M117 29 q8 -6 16 0" fill="none" ${S} stroke-width="2.5" stroke-linecap="round"/>`,
+  }[mood];
+  const mouth = {
+    normal: `<path d="M120 68 q7 5 14 0" fill="none" ${S} stroke-width="3" stroke-linecap="round"/>`,
+    happy: `<path d="M118 66 Q127 80 136 66 Z" fill="${P.navy}" ${S} stroke-width="2.5" stroke-linejoin="round"/>`,
+    angry: `<path d="M120 72 q7 -5 14 0" fill="none" ${S} stroke-width="3" stroke-linecap="round"/>`,
+    surprised: `<ellipse cx="128" cy="70" rx="5" ry="7" fill="${P.navy}"/>`,
+  }[mood];
+  const spot = (x: number, y: number, r: number) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${P.terra}"/>`;
+  return svg([4, 6, 148, 266], `
+    <path d="M26 182 Q12 200 16 216" fill="none" ${S} stroke-width="4" stroke-linecap="round"/>
+    <path d="M10 214 q6 10 12 0 z" fill="${P.navy}"/>
+    <g fill="${P.mustard}" ${S} stroke-width="3.5">
+      <rect x="36" y="196" width="13" height="64"/><rect x="56" y="196" width="13" height="64"/>
+      <rect x="88" y="196" width="13" height="64"/><rect x="106" y="196" width="13" height="64"/>
+    </g>
+    <g fill="${P.navy}"><rect x="35" y="256" width="15" height="10" rx="2"/><rect x="55" y="256" width="15" height="10" rx="2"/><rect x="87" y="256" width="15" height="10" rx="2"/><rect x="105" y="256" width="15" height="10" rx="2"/></g>
+    <ellipse cx="76" cy="188" rx="52" ry="30" fill="${P.mustard}" ${S} stroke-width="4"/>
+    <path d="M90 182 L98 64 L124 66 L120 182 Z" fill="${P.mustard}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    ${spot(50, 182, 8)}${spot(72, 196, 7)}${spot(96, 186, 6)}${spot(60, 170, 5)}${spot(108, 150, 6)}${spot(104, 118, 5)}${spot(112, 92, 5)}${spot(108, 170, 5)}
+    <path d="M104 34 L100 14 M122 32 L124 12" ${S} stroke-width="4" stroke-linecap="round"/>
+    <circle cx="100" cy="13" r="5" fill="${P.terra}" ${S} stroke-width="2.5"/><circle cx="124" cy="11" r="5" fill="${P.terra}" ${S} stroke-width="2.5"/>
+    <ellipse cx="90" cy="42" rx="10" ry="6" fill="${P.mustard}" ${S} stroke-width="3" transform="rotate(-25 90 42)"/>
+    <ellipse cx="114" cy="50" rx="26" ry="22" fill="${P.mustard}" ${S} stroke-width="4"/>
+    <ellipse cx="128" cy="64" rx="17" ry="12" fill="${P.paper}" ${S} stroke-width="3"/>
+    <circle cx="124" cy="60" r="1.8" fill="${P.navy}"/><circle cx="133" cy="60" r="1.8" fill="${P.navy}"/>
+    ${eyes}${mouth}`);
+}
+
 function clockTower() {
   let ticks = '';
   for (let i = 0; i < 12; i++) {
@@ -389,7 +456,10 @@ export function allArt(): Art[] {
     list.push({ key: `nosochka-${m}`, svg: nosochka(m), scale: 4.2 });
     list.push({ key: `sardina-${m}`, svg: sardina(m), scale: 2.2 });
     list.push({ key: `rumb-${m}`, svg: rumb(m), scale: 1.5 });
+    list.push({ key: `heron-${m}`, svg: heron(m), scale: 2.2 });
+    list.push({ key: `giraffe-${m}`, svg: giraffe(m), scale: 2.4 });
   }
+  list.push({ key: 'giraffe-surprised', svg: giraffe('surprised'), scale: 2.4 });
   list.push({ key: 'house-pizza', svg: pizzeriaHouse(), scale: 1.6 });
   list.push({ key: 'house-gazebo', svg: gazebo(), scale: 1.6 });
   list.push({ key: 'house-clock', svg: clockTower(), scale: 1.6 });

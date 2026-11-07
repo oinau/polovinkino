@@ -1,7 +1,7 @@
 // Everything the characters say. Kept apart from the scenes so the voice studio
 // can list every spoken phrase for recording.
 import type { CustomerId } from './art';
-import { pierNumbers, type CrewId, type Dispute, type PierRound } from './levels';
+import { HEIGHTS, pierNumbers, type CrewId, type Dispute, type PatientId, type PierRound } from './levels';
 import { capitalize, compare, str, words, type Frac } from './fractions';
 import { hourPart, meetWords, minuteMark, minutesWords, timeWords } from './time';
 
@@ -117,7 +117,7 @@ export function explainDispute(d: Dispute, spoken = false) {
 export const VOICE_SAMPLE = 'Привет! Я буду читать заказы. Мне две третьих пиццы!';
 
 // ---------- heroes: name tags and the one-time introduction card ----------
-export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka' | 'pier';
+export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka' | 'pier' | 'heron' | 'giraffe';
 
 export const HEROES: Record<HeroId, { name: string; tag: string; textures: string[]; intro: string }> = {
   pyh: {
@@ -147,6 +147,14 @@ export const HEROES: Record<HeroId, { name: string; tag: string; textures: strin
   pier: {
     name: 'Капитан Сардина и попугай Румб', tag: '', textures: ['sardina-happy', 'rumb-happy'],
     intro: 'Это капитан Сардина и её попугай Румб. Они привезли из плавания сундук монет. Помоги поделить клад честно, чтобы никто в команде не обиделся!',
+  },
+  heron: {
+    name: 'Доктор Цапля', tag: 'Доктор Цапля', textures: ['heron-happy'],
+    intro: 'Это доктор Цапля. У неё длинные ноги, длинный клюв и самый точный ростомер в Половинкино. Рост здесь меряют в домиках!',
+  },
+  giraffe: {
+    name: 'Жираф Жорж', tag: 'Жорж', textures: ['giraffe-happy'],
+    intro: 'Это жираф Жорж. Он приехал в Половинкино недавно и ещё не знает, что он самый высокий в городе.',
   },
   gnomes: {
     name: 'Усач и Очкарик', tag: '', textures: ['usach-happy', 'ochkarik-happy'],
@@ -218,3 +226,65 @@ export const PIER_LINES = {
   right: 'Честно поделили! Кррра!',
 };
 export const PIER_NOTES = ['', 'Клад поделён! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Команда довольна.', 'Ни одной ошибки! Самый честный казначей на море!'];
+
+// ---------- doctor ----------
+export const PATIENTS: Record<PatientId, { name: string; gen: string }> = {
+  borovik: { name: 'Дед Боровик', gen: 'деда Боровика' },
+  tikhon: { name: 'Тихон', gen: 'Тихона' },
+  ekibas: { name: 'Екибас', gen: 'Екибаса' },
+  pyh: { name: 'Пых', gen: 'Пыха' },
+  osya: { name: 'Ося', gen: 'Оси' },
+  usach: { name: 'Усач', gen: 'Усача' },
+  sardina: { name: 'Капитан Сардина', gen: 'капитана Сардины' },
+  giraffe: { name: 'Жорж', gen: 'жирафа Жоржа' },
+  heron: { name: 'Доктор Цапля', gen: 'доктора Цапли' },
+};
+
+const NUM_GEN: Record<number, string> = { 2: 'двух', 3: 'трёх', 4: 'четырёх', 6: 'шести' };
+const WHOLE_WORDS: Record<number, string> = { 2: 'две вторых', 3: 'три третьих', 4: 'четыре четвёртых', 6: 'шесть шестых' };
+export const partsWord = (n: number) => `${n}\u00A0${plural(n, 'часть', 'части', 'частей')}`;
+
+const isOne = (h: Frac) => h.n === h.d;
+const above = (h: Frac) => h.n > h.d;
+/** «5/4 = 1 1/4» */
+export const mixed = (h: Frac) => `${str(h)} = 1 ${str({ n: h.n - h.d, d: h.d })}`;
+
+/** «одна четвёртая домика», «ровно один домик» */
+export const heightWords = (h: Frac) => (isOne(h) ? 'ровно один домик' : `${words(h)} домика`);
+
+export const doctorSetAsk = (who: PatientId, h: Frac) => `Рост ${PATIENTS[who].gen} — ${heightWords(h)}. Поставь планку!`;
+export const doctorReadAsk = (who: PatientId) => `Какой рост у ${PATIENTS[who].gen}?`;
+export const doctorSortAsk = (order: 'asc' | 'desc') =>
+  order === 'asc' ? 'Расставь всех по росту: нажимай по очереди, от самого низкого до самого высокого.'
+    : 'Расставь всех по росту: нажимай по очереди, от самого высокого до самого низкого.';
+
+/** Why the height is what it is, counted on a chart with `ticks` divisions per house. */
+export function doctorExplain(h: Frac, ticks: number, spoken = false): string {
+  const fr = (x: Frac) => (spoken ? words(x) : str(x));
+  if (isOne(h)) return `Ровно до конька крыши: это один целый домик, ${spoken ? WHOLE_WORDS[ticks] : `${ticks}/${ticks}`}.`;
+  if (above(h)) {
+    const rest = { n: h.n - h.d, d: h.d };
+    return spoken ? `${capitalize(words(h))} — это один целый домик и ещё ${words(rest)}.`
+      : `Один целый домик и ещё ${str(rest)}: ${mixed(h)}.`;
+  }
+  const k = (h.n * ticks) / h.d;
+  const head = `Домик разделён на ${partsWord(ticks)}.`;
+  if (h.d === ticks) return `${head} ${capitalize(fr(h))} — это ${partsWord(k)} снизу.`;
+  return `${head} ${capitalize(fr(h))} — это ${partsWord(k)} из ${NUM_GEN[ticks] ?? ticks}, ${fr({ n: k, d: ticks })}.`;
+}
+
+/** Sorting: which one should have come first. */
+export function doctorSortExplain(first: PatientId, picked: PatientId, order: 'asc' | 'desc', spoken = false) {
+  const fr = (x: Frac) => (spoken ? heightWords(x) : isOne(x) ? '1 домик' : `${str(x)} домика`);
+  const a = PATIENTS[first], b = PATIENTS[picked];
+  return `${order === 'asc' ? 'Сначала тот, кто ниже' : 'Сначала тот, кто выше'}: ${a.name} — ${fr(HEIGHTS[first])}, а ${b.name} — ${fr(HEIGHTS[picked])}.`;
+}
+
+export const DOCTOR_LINES = {
+  bonk: 'Ой! Планка по макушке!',
+  gap: 'Планка висит над головой.',
+  giraffeWow: 'Ой! Я что, выше домика?!',
+  extend: 'Не беда! Достроим ростомер.',
+  same: (who: PatientId) => `Ростом как ${PATIENTS[who].name}!`,
+};
+export const DOCTOR_NOTES = ['', 'Все измерены! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Доктор Цапля довольна.', 'Ни одной ошибки! Самый точный ростомер в городе!'];
