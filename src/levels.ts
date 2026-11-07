@@ -128,7 +128,7 @@ export const GNOME_LEVELS: GnomeLevel[] = [
   {
     name: 'Хитрые споры',
     intro: 'Осторожно: иногда гномы спорят зря, и у них поровну!',
-    showPies: false,
+    showPies: true,
     rounds: [d(f(2, 3), f(4, 6)), d(f(2, 3), f(1, 2)), d(f(1, 2), f(3, 6)), d(f(5, 6), f(2, 3)), d(f(2, 6), f(1, 3))],
   },
 ];
