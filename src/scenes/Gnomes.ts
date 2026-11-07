@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { C, HEX, W, H } from '../theme';
 import { GNOME_LEVELS, type Dispute, type GnomeLevel } from '../levels';
 import type { Mood } from '../art';
-import { compare, str, words, type Frac } from '../fractions';
+import { capitalize, compare, str, words, type Frac } from '../fractions';
 import { sfx, speak } from '../audio';
 import { store } from '../store';
 import { Bubble, Button, FractionView, Guide, coinsBurst, label, modal, resultModal, starsFor, steam, topBar, wrapLabel } from '../ui';
@@ -216,6 +216,7 @@ export class Gnomes extends Phaser.Scene {
     const { usach, ochkarik } = this.dispute;
     this.markDifference(truth);
     const why = this.explain(truth);
+    const whySpoken = this.explain(truth, true);
     this.clearBubbles();
     if (right) {
       sfx('good');
@@ -246,7 +247,7 @@ export class Gnomes extends Phaser.Scene {
       }
       this.guide.say(why);
     }
-    speak(right ? `Верно! ${why}` : why);
+    speak(right ? `Верно! ${whySpoken}` : whySpoken);
     // Fraction labels on the pies so the numbers stay connected to the picture.
     for (const who of ['usach', 'ochkarik'] as Who[]) {
       const f = who === 'usach' ? usach : ochkarik;
@@ -256,17 +257,20 @@ export class Gnomes extends Phaser.Scene {
     this.next.setVisible(true);
   }
 
-  private explain(truth: Who | 'equal') {
+  /** Written with digits for the screen; spoken in words, since TTS reads «3/4» as «три четыре». */
+  private explain(truth: Who | 'equal', spoken = false) {
     const { usach, ochkarik } = this.dispute;
-    if (truth === 'equal') return `${str(usach)} и ${str(ochkarik)} — это поровну. Полоски одной длины!`;
+    const nom = (f: Frac) => (spoken ? words(f) : str(f));
+    const gen = (f: Frac) => (spoken ? words(f, 'gen') : str(f));
+    if (truth === 'equal') return `${capitalize(nom(usach))} и ${nom(ochkarik)} — это поровну. Полоски одной длины!`;
     const big = this.dispute[truth];
     const small = truth === 'usach' ? ochkarik : usach;
     const name = GNOME[truth].gen;
-    if (big.d === small.d) return `Кусочки одинаковые, а у ${name} их больше: ${str(big)} больше ${str(small)}.`;
+    if (big.d === small.d) return `Кусочки одинаковые, а у ${name} их больше: ${nom(big)} больше ${gen(small)}.`;
     if (big.n === 1 && small.n === 1) {
-      return `Чем на больше частей делим, тем меньше кусочек. ${str(small)} меньше ${str(big)}.`;
+      return `Чем на больше частей делим, тем меньше кусочек. ${capitalize(nom(small))} меньше ${gen(big)}.`;
     }
-    return `Посмотри на полоски: у ${name} длиннее. ${str(big)} больше ${str(small)}.`;
+    return `Посмотри на полоски: у ${name} длиннее. ${capitalize(nom(big))} больше ${gen(small)}.`;
   }
 
   /** Outline where the longer pie sticks out past the shorter one, or a line showing equal length. */

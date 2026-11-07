@@ -56,26 +56,60 @@ export function sfx(name: Sfx) {
 }
 
 // Orders are read aloud so a slow reader is not tested on reading instead of fractions.
-let ruVoice: SpeechSynthesisVoice | null | undefined;
-function voice() {
-  if (ruVoice !== undefined && ruVoice !== null) return ruVoice;
-  const voices = speechSynthesis.getVoices();
-  ruVoice = voices.find(v => v.lang?.toLowerCase().startsWith('ru')) ?? null;
-  return ruVoice;
+// Prefer natural-sounding voices; eSpeak (the Linux default) is the last resort.
+// Through speech-dispatcher eSpeak shows up as «Russian», plus ~200 «Russian+Mario»-style variants.
+const isEspeak = (name: string) => /espeak|\+|^russian( \(|$)/i.test(name);
+const NICE = ['anna', 'elena', 'irina', 'aleksandr-hq', 'victoria', 'arina', 'tatiana'];
+
+const voiceRank = (v: SpeechSynthesisVoice) => {
+  const name = v.name.toLowerCase();
+  const lang = v.lang.toLowerCase();
+  const region = lang === 'ru-ru' || lang === 'ru' ? 0 : 0.5;
+  if (/natural|online|neural/.test(name)) return region;
+  if (isEspeak(name)) return 30 + region;
+  const nice = NICE.indexOf(name);
+  return (nice >= 0 ? 10 + nice : 20) + region;
+};
+
+/** Russian voices worth offering, best first; eSpeak variants only if nothing else exists. */
+export function ruVoices(): SpeechSynthesisVoice[] {
+  if (!('speechSynthesis' in window)) return [];
+  const ru = speechSynthesis.getVoices().filter(v => v.lang?.toLowerCase().startsWith('ru'));
+  const real = ru.filter(v => !isEspeak(v.name));
+  const list = real.length ? real : ru.filter(v => !v.name.includes('+'));
+  return list.sort((a, b) => voiceRank(a) - voiceRank(b));
 }
-if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => { ruVoice = undefined; voice(); };
+
+function voice() {
+  const list = ruVoices();
+  return list.find(v => v.name === store.voice) ?? list[0] ?? null;
+}
+
+export const voiceName = () => voice()?.name ?? '';
+
+/** Switch to the next voice and let it introduce itself. */
+export function nextVoice() {
+  const list = ruVoices();
+  if (!list.length) return '';
+  const i = list.findIndex(v => v.name === voiceName());
+  store.voice = list[(i + 1) % list.length].name;
+  speak('Привет! Я буду читать заказы. Мне две третьих пиццы!');
+  return store.voice;
+}
 
 export function speak(text: string) {
   if (!store.sound || !('speechSynthesis' in window)) return;
   const v = voice();
   if (!v) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text.replace(/«|»/g, ''));
-  u.voice = v;
-  u.lang = v.lang;
-  u.rate = 0.95;
-  u.pitch = 1.1;
-  speechSynthesis.speak(u);
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/«|»/g, ''));
+    u.voice = v;
+    u.lang = v.lang;
+    u.rate = 0.95;
+    u.pitch = 1.1;
+    speechSynthesis.speak(u);
+  } catch { /* a broken voice must never break the game */ }
 }
 
 export const stopSpeaking = () => { if ('speechSynthesis' in window) speechSynthesis.cancel(); };

@@ -14,12 +14,12 @@ const CUST = { x: 1560, y: 1000 };
 const COUNTER_TOP = 690;
 const GIVE = { x: 1110, y: 1000 };
 
-interface Lines {
+type Reaction = 'happy' | 'little' | 'much' | 'leave';
+
+interface Lines extends Record<Reaction, string> {
   order: (w: string) => string;
-  happy: string;
-  little: string;
-  much: string;
-  leave: string;
+  /** Second head's remarks: shown in a small bubble, never read aloud. */
+  side?: Record<Reaction, string> & { order: string[] };
 }
 
 const LINES: Record<CustomerId, Lines> = {
@@ -29,6 +29,17 @@ const LINES: Record<CustomerId, Lines> = {
     little: 'Маловато! Голов-то у меня две.',
     much: 'Многовато! Одна голова на диете!',
     leave: 'Всё, уходим! Обе головы обиделись.',
+    side: {
+      order: [
+        'А мне ничего. Я на диете. Наверное.',
+        'А мне только корочку. Я на диете.',
+        'Мне не надо! …Ну, может, кусочек.',
+      ],
+      happy: 'Ладно, диета с понедельника!',
+      little: 'Я же говорил: надо было и мне заказать.',
+      much: 'Столько? Я же на диете!',
+      leave: 'Ну и ладно. Я всё равно на диете.',
+    },
   },
   osya: {
     order: w => `${capitalize(w)} пиццы, пожалуйста! Щупальца уже урчат.`,
@@ -214,6 +225,8 @@ export class Pizzeria extends Phaser.Scene {
   private pyh!: Phaser.GameObjects.Image;
   private customer?: Phaser.GameObjects.Image;
   private bubble?: Bubble;
+  private sideBubble?: Bubble;
+  private sideOrderLine = '';
   private cutButtons: Button[] = [];
   private give!: Button;
   private took!: FractionView;
@@ -232,6 +245,7 @@ export class Pizzeria extends Phaser.Scene {
     this.cutButtons = [];
     this.customer = undefined;
     this.bubble = undefined;
+    this.sideBubble = undefined;
     this.patienceBar = undefined;
   }
 
@@ -346,6 +360,8 @@ export class Pizzeria extends Phaser.Scene {
 
   private nextCustomer() {
     this.order = this.level.orders[this.orderIndex];
+    const side = LINES[this.order.who].side;
+    this.sideOrderLine = side ? Phaser.Utils.Array.GetRandom(side.order) : '';
     this.triesOnOrder = 0;
     this.patience = this.level.patience ?? 0;
     this.busy = true;
@@ -373,11 +389,32 @@ export class Pizzeria extends Phaser.Scene {
     return LINES[this.order.who].order(words(this.order.want, 'acc'));
   }
 
-  private showOrder() {
+  /** Main speech bubble; narrower when the second head needs room on the right. */
+  private mainBubble(h: number) {
     this.bubble?.destroy();
-    const tikhon = this.order.who === 'tikhon';
-    const b = new Bubble(this, 1400, 360, 600, 290, { x: CUST.x - 1400 - 40, y: this.customerTop() - 360 + 10 });
+    const side = !!LINES[this.order.who].side;
+    const x = side ? 1350 : 1400, w = side ? 540 : 600;
+    const b = new Bubble(this, x, 360, w, h, { x: CUST.x - x - 40, y: this.customerTop() - 360 + 10 });
     this.bubble = b;
+    return b;
+  }
+
+  private sideSay(text?: string) {
+    this.sideBubble?.destroy();
+    this.sideBubble = undefined;
+    if (!text) return;
+    // Bo's right head sits at about (1650, 530) on screen.
+    const b = new Bubble(this, 1790, 410, 230, 170, { x: 1650 - 1790, y: 528 - 410 });
+    b.add(wrapLabel(this, 0, 0, text, 200, 24, 800));
+    this.sideBubble = b;
+    this.time.delayedCall(450, () => { if (this.sideBubble === b) b.pop(); });
+    b.setAlpha(0);
+  }
+
+  private showOrder() {
+    const tikhon = this.order.who === 'tikhon';
+    const b = this.mainBubble(290);
+    this.sideSay(this.sideOrderLine);
     if (tikhon) {
       b.add(label(this, 0, -95, '(молча показывает табличку)', 28, HEX.navy, 700));
       b.add(new FractionView(this, 0, 30, this.order.want.n, this.order.want.d, 84));
@@ -390,13 +427,13 @@ export class Pizzeria extends Phaser.Scene {
     b.pop();
   }
 
-  private say(text: string) {
-    this.bubble?.destroy();
-    const b = new Bubble(this, 1400, 360, 600, 200, { x: CUST.x - 1400 - 40, y: this.customerTop() - 360 + 10 });
-    this.bubble = b;
-    b.add(wrapLabel(this, 0, 0, text, 540, 38, 900));
+  private react(kind: Reaction) {
+    const lines = LINES[this.order.who];
+    const b = this.mainBubble(200);
+    b.add(wrapLabel(this, 0, 0, lines[kind], b.w - 60, 38, 900));
     b.pop();
-    if (this.order.who !== 'tikhon') speak(text);
+    this.sideSay(lines.side?.[kind]);
+    if (this.order.who !== 'tikhon') speak(lines[kind]);
   }
 
   private customerTop() {
@@ -472,7 +509,7 @@ export class Pizzeria extends Phaser.Scene {
       ? `Верно! ${str(gave)} — это то же самое, что ${str(want)}!`
       : `Верно! ${capitalize(words(want))} — это ${pieces(gave.n)} из ${gave.d}.`);
     this.pizza.serve({ x: CUST.x, y: this.customerTop() + 150 }, () => {
-      this.say(LINES[this.order.who].happy);
+      this.react('happy');
       coinsBurst(this, CUST.x, this.customerTop() + 60, earned);
       this.tweens.add({ targets: this.customer, y: CUST.y - 30, duration: 180, yoyo: true, repeat: 2 });
       this.time.delayedCall(2300, () => this.customerLeaves());
@@ -488,7 +525,7 @@ export class Pizzeria extends Phaser.Scene {
     this.setPyh('worried');
     if (this.level.patience) this.patience = Math.max(3, this.patience - this.level.patience * 0.2);
     const tooMuch = gave.n * want.d > want.n * gave.d;
-    this.say(tooMuch ? LINES[this.order.who].much : LINES[this.order.who].little);
+    this.react(tooMuch ? 'much' : 'little');
     this.shakeCustomer();
     const s = simplify(gave);
     const same = s.n === gave.n ? '' : ` (то же, что ${str(s)})`;
@@ -523,7 +560,7 @@ export class Pizzeria extends Phaser.Scene {
     sfx('angry');
     this.setMood('angry');
     this.setPyh('worried');
-    this.say(LINES[this.order.who].leave);
+    this.react('leave');
     this.shakeCustomer();
     this.guide.hideArrow();
     this.guide.say('Клиент не дождался… Ничего, следующий!');
@@ -535,6 +572,7 @@ export class Pizzeria extends Phaser.Scene {
     stopSpeaking();
     this.bubble?.destroy();
     this.bubble = undefined;
+    this.sideSay();
     const c = this.customer!;
     this.customer = undefined;
     c.setFlipX(true);

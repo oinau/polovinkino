@@ -7,6 +7,8 @@ interface Save {
   stars: Record<Place, number[]>;
   coins: number;
   sound: boolean;
+  /** Chosen speech voice name; empty = pick the best one automatically. */
+  voice?: string;
 }
 
 const fresh = (): Save => ({ stars: { pizza: [], gnomes: [] }, coins: 0, sound: true });
@@ -39,4 +41,6 @@ export const store = {
   addCoins(n: number) { save.coins += n; persist(); },
   get sound() { return save.sound; },
   set sound(v: boolean) { save.sound = v; persist(); },
+  get voice() { return save.voice ?? ''; },
+  set voice(v: string) { save.voice = v; persist(); },
 };

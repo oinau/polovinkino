@@ -51,16 +51,16 @@ export const PIZZA_LEVELS: PizzaLevel[] = [
   },
   {
     name: 'Хитрые заказы',
-    intro: 'Иногда пицца нарезана не так, как просят. Подумай, сколько кусочков отдать!',
+    intro: 'Пых уже нарезал пиццу, но не так, как просят клиенты. Подумай, сколько кусочков отдать!',
     guide: false,
     patience: 60,
-    cuts: [2, 3, 4, 6],
+    cuts: [],
     orders: [
       { who: 'borovik', want: f(1, 3), preCut: 6 },
       { who: 'bo', want: f(2, 3), preCut: 6 },
-      { who: 'osya', want: f(1, 2), preCut: 6 },
-      { who: 'tikhon', want: f(3, 4) },
-      { who: 'bo', want: f(1, 2), preCut: 4 },
+      { who: 'osya', want: f(1, 2), preCut: 4 },
+      { who: 'tikhon', want: f(1, 2), preCut: 6 },
+      { who: 'bo', want: f(3, 4), preCut: 4 },
     ],
   },
   {

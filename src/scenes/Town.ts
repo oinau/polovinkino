@@ -2,8 +2,8 @@ import Phaser from 'phaser';
 import { C, HEX, W, H } from '../theme';
 import { store, type Place } from '../store';
 import { PIZZA_LEVELS, GNOME_LEVELS } from '../levels';
-import { label, iconButton, modal, starShape } from '../ui';
-import { sfx } from '../audio';
+import { Button, label, iconButton, modal, starShape } from '../ui';
+import { nextVoice, ruVoices, sfx, voiceName } from '../audio';
 
 interface Spot {
   key: string;
@@ -19,7 +19,7 @@ const SPOTS: Spot[] = [
   // Closed places stand on the far hill, open ones in front.
   { key: 'house-courier', x: 1520, y: 690, name: 'Курьеры', scale: 0.56 },
   { key: 'house-pier', x: 1690, y: 700, name: 'Пристань', scale: 0.56 },
-  { key: 'house-potion', x: 1855, y: 690, name: 'Зельеварня', scale: 0.56 },
+  { key: 'house-potion', x: 1825, y: 690, name: 'Зельеварня', scale: 0.56 },
   { key: 'house-pizza', x: 390, y: 890, name: 'Пиццерия «Кусочек»', place: 'pizza', scale: 1 },
   { key: 'house-gazebo', x: 1000, y: 890, name: 'Беседка спорщиков', place: 'gnomes', scale: 1 },
 ];
@@ -37,6 +37,8 @@ export class Town extends Phaser.Scene {
       store.sound = !store.sound;
       snd.setIcon(store.sound ? 'sound' : 'mute');
     });
+    this.addVoicePicker(() => snd.setIcon('sound'));
+
     const coin = this.add.graphics();
     coin.fillStyle(C.mustard).fillCircle(70, 66, 26).lineStyle(5, C.navy).strokeCircle(70, 66, 26);
     coin.lineStyle(4, C.mustardDark).strokeCircle(70, 66, 14);
@@ -50,6 +52,22 @@ export class Town extends Phaser.Scene {
     const g1 = this.add.image(1250, 905, 'usach-normal').setOrigin(0.5, 1).setScale(0.48);
     const g2 = this.add.image(1335, 905, 'ochkarik-normal').setOrigin(0.5, 1).setScale(0.48).setFlipX(true);
     this.tweens.add({ targets: [g1, g2], scaleY: 0.5, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+  }
+
+  /** «Голос: Anna» — tap to hear the next voice. Hidden when the browser has no Russian voice. */
+  private addVoicePicker(onSoundOn: () => void) {
+    const caption = () => `Голос: ${voiceName()}`;
+    const b = new Button(this, W - 330, 66, caption(), () => {
+      store.sound = true;
+      onSoundOn();
+      nextVoice();
+      b.setCaption(caption());
+    }, { w: 360, h: 70, size: 28 });
+    const refresh = () => { b.setVisible(ruVoices().length > 0).setCaption(caption()); };
+    refresh();
+    // Voices load asynchronously in some browsers.
+    if ('speechSynthesis' in window) speechSynthesis.addEventListener('voiceschanged', refresh);
+    this.events.once('shutdown', () => speechSynthesis.removeEventListener('voiceschanged', refresh));
   }
 
   private drawLandscape() {
