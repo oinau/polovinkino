@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Половинкино — макет стиля</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap&subset=cyrillic" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F3E9D2; --paper: #FFF8EC; --terra: #D9734E; --olive: #8A9A5B;
+    --mustard: #E0B04A; --navy: #2E3A59; --sand: #E7D3A8;
+  }
+  .wrap { font-family: 'Nunito', var(--font-sans, sans-serif); display: flex; flex-direction: column; gap: 20px; }
+  .scene { background: var(--cream); border-radius: var(--radius, 12px); padding: 16px; color: var(--navy); }
+  .hud { display: flex; align-items: center; gap: 12px; font-weight: 800; margin-bottom: 10px; font-size: 15px; }
+  .bar { flex: 1; max-width: 260px; height: 14px; border: 3px solid var(--navy); border-radius: 10px; background: var(--paper); overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 100%; background: var(--olive); transition: width .25s linear, background .3s; }
+  svg.stage { width: 100%; height: auto; display: block; border-radius: 8px; }
+  svg text { font-family: 'Nunito', sans-serif; }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 12px; font-weight: 800; }
+  .cut { display: flex; align-items: center; gap: 8px; }
+  .cut button { font: inherit; font-weight: 900; font-size: 18px; width: 44px; height: 44px; border: 3px solid var(--navy); background: var(--paper); color: var(--navy); border-radius: 12px; cursor: pointer; }
+  .cut button.on { background: var(--mustard); }
+  .took { display: flex; align-items: center; gap: 8px; }
+  .frac { display: inline-flex; flex-direction: column; align-items: center; font-weight: 900; font-size: 22px; line-height: 1; min-width: 26px; }
+  .frac b { display: block; width: 100%; height: 3px; background: var(--navy); margin: 3px 0; }
+  .give { margin-left: auto; font: inherit; font-weight: 900; font-size: 18px; background: var(--terra); color: var(--paper); border: 3px solid var(--navy); border-radius: 14px; padding: 10px 20px; cursor: pointer; box-shadow: 0 4px 0 var(--navy); }
+  .give:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--navy); }
+  .give.next { background: var(--olive); }
+  .msg { min-height: 24px; margin-top: 12px; font-weight: 700; font-size: 16px; }
+
+  .slice { cursor: pointer; transition: transform .2s ease-out; }
+  .slice.sel .outline { stroke-width: 5; }
+  .slice.hint .outline { stroke: var(--olive); stroke-dasharray: 7 5; stroke-width: 5; }
+  .blink { animation: blink 4s infinite; transform-box: fill-box; transform-origin: center; }
+  .blink.late { animation-delay: 1.3s; }
+  @keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+  #pyh { animation: bob 2.4s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-4px); } }
+  #bo.happy { animation: jump .45s ease-in-out 3; }
+  @keyframes jump { 50% { transform: translateY(-18px); } }
+  #bo.angry { animation: shake .12s linear 12; }
+  @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .skin { transition: fill .3s; }
+  .skin-s { transition: stroke .3s; }
+  #bo.angry .skin { fill: var(--terra); }
+  #bo.angry .skin-s { stroke: var(--terra); }
+  #steam { opacity: 0; transition: opacity .2s; }
+  #bo.angry #steam { opacity: 1; }
+  #steam circle { animation: steam 1s ease-out infinite; }
+  @keyframes steam { from { transform: translateY(0); opacity: .95; } to { transform: translateY(-34px); opacity: 0; } }
+  .coin { animation: coin 1.3s ease-out forwards; }
+  @keyframes coin { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-140px); opacity: 0; } }
+
+  h3 { margin: 4px 0 0; font-size: 17px; font-weight: 900; }
+  .cast { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .card { background: var(--cream); border-radius: var(--radius, 12px); padding: 16px; color: var(--navy); }
+  .card svg { width: 100%; height: 110px; display: block; }
+  .card .name { font-weight: 900; margin-top: 8px; }
+  .card .desc { font-size: 13px; font-weight: 600; margin-top: 2px; line-height: 1.35; }
+  .puff { animation: puff 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center bottom; }
+  @keyframes puff { 50% { transform: scale(1.12); } }
+  .palette { display: flex; flex-wrap: wrap; gap: 10px; }
+  .sw { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
+  .sw i { width: 28px; height: 28px; border-radius: 8px; border: 2px solid var(--navy); display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="scene">
+  <div class="hud">
+    <span>Клиент: Двухголовый Бо</span>
+    <span style="margin-left:auto">Терпение</span>
+    <div class="bar"><i id="patience"></i></div>
+  </div>
+
+  <svg class="stage" viewBox="0 0 800 470" id="stage">
+    <!-- room -->
+    <rect x="0" y="0" width="800" height="440" fill="#F3E9D2"/>
+    <rect x="0" y="262" width="800" height="178" fill="#EBDDBF"/>
+    <rect x="0" y="440" width="800" height="30" fill="#D9C39A"/>
+    <line x1="0" y1="440" x2="800" y2="440" stroke="#2E3A59" stroke-width="3"/>
+
+    <!-- menu board -->
+    <path d="M310 34 L365 14 L420 34" fill="none" stroke="#2E3A59" stroke-width="3"/>
+    <circle cx="365" cy="14" r="4" fill="#2E3A59"/>
+    <rect x="290" y="34" width="150" height="142" rx="10" fill="#2E3A59"/>
+    <text x="365" y="62" text-anchor="middle" fill="#FFF8EC" font-size="18" font-weight="900" letter-spacing="2">МЕНЮ</text>
+    <g id="menu"></g>
+
+    <!-- Pyh the dumpling chef -->
+    <g id="pyh">
+      <path d="M70 305 Q68 200 150 192 Q232 200 230 305 Z" fill="#FFF8EC" stroke="#2E3A59" stroke-width="4"/>
+      <path d="M101 222 q7 -12 14 0 q7 -12 14 0 q7 -12 14 0 q7 -12 14 0 q7 -12 14 0 q7 -12 14 0 q7 -12 14 0" fill="none" stroke="#2E3A59" stroke-width="3" stroke-linecap="round"/>
+      <!-- hat: stroked puffs, then unstroked copies to hide inner lines -->
+      <g stroke="#2E3A59" stroke-width="4" fill="#FFF8EC">
+        <circle cx="105" cy="130" r="40"/><circle cx="150" cy="98" r="52"/><circle cx="198" cy="128" r="40"/><circle cx="150" cy="140" r="42"/>
+      </g>
+      <g fill="#FFF8EC">
+        <circle cx="105" cy="130" r="38"/><circle cx="150" cy="98" r="50"/><circle cx="198" cy="128" r="38"/><circle cx="150" cy="140" r="40"/>
+      </g>
+      <rect x="98" y="166" width="104" height="38" rx="8" fill="#FFF8EC" stroke="#2E3A59" stroke-width="4"/>
+      <line x1="112" y1="185" x2="188" y2="185" stroke="#E0B04A" stroke-width="6" stroke-linecap="round"/>
+      <ellipse class="blink" cx="128" cy="252" rx="6" ry="7" fill="#2E3A59"/>
+      <g class="blink late"><circle cx="172" cy="250" r="11" fill="#fff" stroke="#2E3A59" stroke-width="3"/><circle cx="175" cy="253" r="5" fill="#2E3A59"/></g>
+      <ellipse cx="111" cy="270" rx="10" ry="5" fill="#D9734E" opacity=".5"/>
+      <ellipse cx="192" cy="272" rx="10" ry="5" fill="#D9734E" opacity=".5"/>
+      <path d="M140 274 Q151 286 162 274" fill="none" stroke="#2E3A59" stroke-width="3" stroke-linecap="round"/>
+      <path d="M226 272 Q250 270 258 254" fill="none" stroke="#2E3A59" stroke-width="4" stroke-linecap="round"/>
+      <line x1="258" y1="254" x2="270" y2="240" stroke="#2E3A59" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="276" cy="232" r="11" fill="#FFF8EC" stroke="#2E3A59" stroke-width="3"/>
+      <circle cx="276" cy="232" r="2.5" fill="#2E3A59"/>
+    </g>
+
+    <!-- counter -->
+    <rect x="-5" y="298" width="525" height="26" fill="#E7D3A8" stroke="#2E3A59" stroke-width="4"/>
+    <rect x="-5" y="324" width="525" height="150" fill="#D9734E" stroke="#2E3A59" stroke-width="4"/>
+    <rect x="-3" y="348" width="521" height="12" fill="#8A9A5B"/>
+    <text x="36" y="426" fill="#FFF8EC" font-size="38" font-weight="900" letter-spacing="2">КУСОЧЕК</text>
+
+    <!-- pizza -->
+    <circle cx="390" cy="318" r="92" fill="#C9973A" stroke="#2E3A59" stroke-width="4"/>
+    <g id="pizza"></g>
+
+    <!-- Bo, the two-headed customer -->
+    <g id="bo">
+      <line x1="615" y1="390" x2="608" y2="440" stroke="#2E3A59" stroke-width="5" stroke-linecap="round"/>
+      <line x1="665" y1="390" x2="672" y2="440" stroke="#2E3A59" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="600" cy="442" rx="16" ry="7" fill="#D9734E" stroke="#2E3A59" stroke-width="3"/>
+      <ellipse cx="682" cy="442" rx="16" ry="7" fill="#D9734E" stroke="#2E3A59" stroke-width="3"/>
+      <path d="M592 302 Q562 302 550 282" fill="none" stroke="#2E3A59" stroke-width="4" stroke-linecap="round"/>
+      <path d="M690 302 Q720 312 732 290" fill="none" stroke="#2E3A59" stroke-width="4" stroke-linecap="round"/>
+      <circle class="skin" cx="548" cy="279" r="7" fill="#8A9A5B" stroke="#2E3A59" stroke-width="3"/>
+      <circle class="skin" cx="733" cy="287" r="7" fill="#8A9A5B" stroke="#2E3A59" stroke-width="3"/>
+      <!-- necks -->
+      <path d="M618 262 L590 200 M665 258 L700 185" stroke="#2E3A59" stroke-width="22" stroke-linecap="round"/>
+      <path class="skin-s" d="M618 262 L590 200 M665 258 L700 185" stroke="#8A9A5B" stroke-width="14" stroke-linecap="round"/>
+      <path class="skin" d="M600 395 Q560 330 590 272 Q640 228 690 272 Q720 330 680 395 Z" fill="#8A9A5B" stroke="#2E3A59" stroke-width="4"/>
+      <ellipse cx="640" cy="338" rx="28" ry="36" fill="#A9B57E"/>
+      <!-- left head: one big eye -->
+      <circle class="skin" cx="585" cy="170" r="36" fill="#8A9A5B" stroke="#2E3A59" stroke-width="4"/>
+      <g class="blink"><circle cx="585" cy="162" r="15" fill="#fff" stroke="#2E3A59" stroke-width="3"/><circle cx="579" cy="165" r="6" fill="#2E3A59"/></g>
+      <path id="moL" d="M568 186 Q585 197 602 186" fill="none" stroke="#2E3A59" stroke-width="3.5" stroke-linecap="round"/>
+      <!-- right head: tall, grumpy, beret -->
+      <ellipse class="skin" cx="705" cy="150" rx="28" ry="40" fill="#8A9A5B" stroke="#2E3A59" stroke-width="4"/>
+      <circle class="blink late" cx="696" cy="142" r="4" fill="#2E3A59"/>
+      <circle class="blink late" cx="715" cy="142" r="4" fill="#2E3A59"/>
+      <path d="M688 130 L700 134 M722 130 L710 134" stroke="#2E3A59" stroke-width="3" stroke-linecap="round"/>
+      <path id="moR" d="M696 170 L714 170" fill="none" stroke="#2E3A59" stroke-width="3.5" stroke-linecap="round"/>
+      <ellipse cx="705" cy="112" rx="30" ry="9" fill="#D9734E" stroke="#2E3A59" stroke-width="3"/>
+      <circle cx="705" cy="102" r="4" fill="#2E3A59"/>
+      <g id="steam" fill="#FFF8EC" stroke="#2E3A59" stroke-width="2">
+        <circle cx="560" cy="128" r="9"/><circle cx="612" cy="124" r="7" style="animation-delay:.3s"/>
+        <circle cx="682" cy="96" r="8" style="animation-delay:.15s"/><circle cx="730" cy="98" r="9" style="animation-delay:.45s"/>
+      </g>
+    </g>
+
+    <!-- speech bubbles -->
+    <g id="bubble">
+      <rect x="455" y="8" width="226" height="100" rx="18" fill="#FFF8EC" stroke="#2E3A59" stroke-width="3"/>
+      <path d="M562 106 L578 130 L590 106" fill="#FFF8EC" stroke="#2E3A59" stroke-width="3" stroke-linejoin="round"/>
+      <line x1="564" y1="107" x2="588" y2="107" stroke="#FFF8EC" stroke-width="5"/>
+      <text x="568" y="38" text-anchor="middle" fill="#2E3A59" font-size="17" font-weight="800">Мне две трети пиццы!</text>
+      <text x="568" y="66" text-anchor="middle" fill="#2E3A59" font-size="23" font-weight="900">2</text>
+      <line x1="556" y1="73" x2="580" y2="73" stroke="#2E3A59" stroke-width="3"/>
+      <text x="568" y="97" text-anchor="middle" fill="#2E3A59" font-size="23" font-weight="900">3</text>
+    </g>
+    <g>
+      <rect x="690" y="20" width="104" height="68" rx="14" fill="#FFF8EC" stroke="#2E3A59" stroke-width="3"/>
+      <path d="M716 86 L712 102 L730 86" fill="#FFF8EC" stroke="#2E3A59" stroke-width="3" stroke-linejoin="round"/>
+      <line x1="717" y1="87" x2="729" y2="87" stroke="#FFF8EC" stroke-width="5"/>
+      <text id="sideTalk" x="742" y="42" text-anchor="middle" fill="#2E3A59" font-size="12.5" font-weight="700">
+        <tspan x="742">А мне ничего.</tspan><tspan x="742" dy="16">Я на диете.</tspan><tspan x="742" dy="16">Наверное.</tspan>
+      </text>
+    </g>
+    <g id="fx"></g>
+  </svg>
+
+  <div class="controls">
+    <div class="cut">Резать на:
+      <button data-n="2">2</button><button data-n="3" class="on">3</button><button data-n="6">6</button>
+    </div>
+    <div class="took">Взял: <span class="frac"><span id="k">0</span><b></b><span id="n">3</span></span></div>
+    <button class="give" id="give">Отдать заказ</button>
+  </div>
+  <div class="msg" id="msg">Нажимай на кусочки, чтобы взять их.</div>
+</div>
+
+<h3>Жители Половинкино</h3>
+<div class="cast">
+  <div class="card">
+    <svg viewBox="0 0 120 120" id="osya"></svg>
+    <div class="name">Осьминожка Ося</div>
+    <div class="desc">Берёт по кусочку на каждое щупальце. Вечно сбивается со счёта.</div>
+  </div>
+  <div class="card">
+    <svg viewBox="0 0 120 120">
+      <path d="M45 15 L75 15 L75 76 Q75 102 50 102 L26 102 Q12 102 12 90 Q12 79 25 77 L45 71 Z" fill="#E0B04A" stroke="#2E3A59" stroke-width="3.5" stroke-linejoin="round"/>
+      <rect x="45" y="15" width="30" height="7" fill="#D9734E"/><rect x="45" y="27" width="30" height="5" fill="#D9734E"/>
+      <path d="M45 15 L75 15" stroke="#2E3A59" stroke-width="3.5"/>
+      <circle class="blink" cx="55" cy="46" r="3.5" fill="#2E3A59"/><circle class="blink" cx="67" cy="46" r="3.5" fill="#2E3A59"/>
+      <ellipse cx="61" cy="57" rx="3" ry="4" fill="#2E3A59"/>
+      <line x1="76" y1="64" x2="95" y2="48" stroke="#2E3A59" stroke-width="3" stroke-linecap="round"/>
+      <rect x="80" y="16" width="34" height="32" rx="5" fill="#FFF8EC" stroke="#2E3A59" stroke-width="3"/>
+      <text x="97" y="30" text-anchor="middle" font-size="12" font-weight="900" fill="#2E3A59">1</text>
+      <line x1="91" y1="33" x2="103" y2="33" stroke="#2E3A59" stroke-width="2"/>
+      <text x="97" y="45" text-anchor="middle" font-size="12" font-weight="900" fill="#2E3A59">6</text>
+    </svg>
+    <div class="name">Носок Тихон</div>
+    <div class="desc">Не разговаривает. Показывает заказ табличкой.</div>
+  </div>
+  <div class="card">
+    <svg viewBox="0 0 120 120">
+      <rect x="40" y="52" width="40" height="54" rx="14" fill="#FFF8EC" stroke="#2E3A59" stroke-width="3.5"/>
+      <path d="M12 56 Q60 -4 108 56 Z" fill="#8A9A5B" stroke="#2E3A59" stroke-width="3.5" stroke-linejoin="round"/>
+      <circle cx="40" cy="38" r="6" fill="#FFF8EC"/><circle cx="66" cy="26" r="7" fill="#FFF8EC"/><circle cx="86" cy="44" r="5" fill="#FFF8EC"/>
+      <path d="M47 71 q5 4 10 0 M63 71 q5 4 10 0" fill="none" stroke="#2E3A59" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M60 80 q-12 -6 -19 6 q10 1 19 -3 q9 4 19 3 q-7 -12 -19 -6z" fill="#2E3A59"/>
+      <path d="M92 70 L100 110 M92 70 q-2 -8 -9 -6" fill="none" stroke="#2E3A59" stroke-width="3.5" stroke-linecap="round"/>
+    </svg>
+    <div class="name">Дед Боровик</div>
+    <div class="desc">Терпеливый, но ворчит. Идеален для первых заказов.</div>
+  </div>
+  <div class="card">
+    <svg viewBox="0 0 160 120">
+      <g>
+        <ellipse cx="45" cy="100" rx="22" ry="17" fill="#E0B04A" stroke="#2E3A59" stroke-width="3"/>
+        <circle cx="45" cy="66" r="18" fill="#FFF8EC" stroke="#2E3A59" stroke-width="3"/>
+        <path d="M24 56 L45 8 L66 56 Z" fill="#D9734E" stroke="#2E3A59" stroke-width="3" stroke-linejoin="round"/>
+        <circle class="blink" cx="39" cy="65" r="3" fill="#2E3A59"/><circle class="blink" cx="52" cy="65" r="3" fill="#2E3A59"/>
+        <path d="M45 72 q-10 -4 -15 6 q8 0 15 -3 q7 3 15 3 q-5 -10 -15 -6z" fill="#2E3A59"/>
+      </g>
+      <g class="puff">
+        <ellipse cx="115" cy="100" rx="22" ry="17" fill="#E0B04A" stroke="#2E3A59" stroke-width="3"/>
+        <circle cx="115" cy="66" r="18" fill="#FFF8EC" stroke="#2E3A59" stroke-width="3"/>
+        <ellipse cx="102" cy="72" rx="6" ry="3.5" fill="#D9734E" opacity=".6"/><ellipse cx="128" cy="72" rx="6" ry="3.5" fill="#D9734E" opacity=".6"/>
+        <path d="M94 56 L115 8 L136 56 Z" fill="#8A9A5B" stroke="#2E3A59" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="108" cy="65" r="6" fill="none" stroke="#2E3A59" stroke-width="2.5"/><circle cx="123" cy="65" r="6" fill="none" stroke="#2E3A59" stroke-width="2.5"/>
+        <line x1="114" y1="65" x2="117" y2="65" stroke="#2E3A59" stroke-width="2.5"/>
+        <circle cx="108" cy="65" r="2" fill="#2E3A59"/><circle cx="123" cy="65" r="2" fill="#2E3A59"/>
+        <ellipse cx="115" cy="77" rx="5" ry="3" fill="#2E3A59"/>
+      </g>
+      <text x="80" y="38" text-anchor="middle" font-size="22" font-weight="900" fill="#D9734E">!!</text>
+    </svg>
+    <div class="name">Гномы Усач и Очкарик</div>
+    <div class="desc">Спорят, кому больше досталось. От злости надуваются.</div>
+  </div>
+</div>
+
+<h3>Палитра</h3>
+<div class="palette">
+  <div class="sw"><i style="background:#F3E9D2"></i>Крем: фон</div>
+  <div class="sw"><i style="background:#2E3A59"></i>Тёмно-синий: контуры, текст</div>
+  <div class="sw"><i style="background:#D9734E"></i>Терракота: акцент, «ой»</div>
+  <div class="sw"><i style="background:#8A9A5B"></i>Олива: «верно», спокойствие</div>
+  <div class="sw"><i style="background:#E0B04A"></i>Горчица: еда, выделение</div>
+</div>
+
+</div>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+};
+const polar = (cx, cy, r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+const gcd = (a, b) => b ? gcd(b, a % b) : a;
+
+// --- menu board mini pizzas ---
+const menu = document.getElementById('menu');
+[[320, 2], [365, 3], [410, 6]].forEach(([x, n]) => {
+  const cy = 102, r = 17;
+  el('circle', { cx: x, cy, r, fill: '#F2CF7A', stroke: '#E0B04A', 'stroke-width': 4 }, menu);
+  const a0 = -Math.PI / 2, a1 = a0 + 2 * Math.PI / n;
+  const [x0, y0] = polar(x, cy, r - 2, a0), [x1, y1] = polar(x, cy, r - 2, a1);
+  el('path', { d: `M${x} ${cy} L${x0} ${y0} A${r - 2} ${r - 2} 0 0 1 ${x1} ${y1} Z`, fill: '#D9734E' }, menu);
+  for (let i = 0; i < n; i++) {
+    const [px, py] = polar(x, cy, r, -Math.PI / 2 + i * 2 * Math.PI / n);
+    el('line', { x1: x, y1: cy, x2: px, y2: py, stroke: '#2E3A59', 'stroke-width': 1.5 }, menu);
+  }
+  const t = el('text', { x, y: 150, 'text-anchor': 'middle', fill: '#FFF8EC', 'font-size': 16, 'font-weight': 900 }, menu);
+  t.textContent = '1/' + n;
+});
+
+// --- pizza ---
+const CX = 390, CY = 318, R = 80;
+const pizza = document.getElementById('pizza');
+let n = 3, sel = new Set(), busy = false, done = false;
+
+function drawPizza() {
+  pizza.innerHTML = '';
+  const step = 2 * Math.PI / n;
+  for (let i = 0; i < n; i++) {
+    const a0 = -Math.PI / 2 + i * step, a1 = a0 + step, mid = (a0 + a1) / 2;
+    const g = el('g', { class: 'slice' }, pizza);
+    g.dataset.i = i;
+    g.dataset.dx = 12 * Math.cos(mid);
+    g.dataset.dy = 12 * Math.sin(mid);
+    const [x0, y0] = polar(CX, CY, R, a0), [x1, y1] = polar(CX, CY, R, a1);
+    const sector = `M${CX} ${CY} L${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1} Z`;
+    el('path', { d: sector, fill: '#F2CF7A' }, g);
+    const [c0x, c0y] = polar(CX, CY, R - 6, a0), [c1x, c1y] = polar(CX, CY, R - 6, a1);
+    el('path', { d: `M${c0x} ${c0y} A${R - 6} ${R - 6} 0 0 1 ${c1x} ${c1y}`, fill: 'none', stroke: '#E0B04A', 'stroke-width': 12 }, g);
+    const count = 12 / n, perRow = Math.ceil(count / 2);
+    for (let p = 0; p < count; p++) {
+      const row = p % 2, col = Math.floor(p / 2);
+      const a = a0 + step * (col + 0.5) / perRow;
+      const [px, py] = polar(CX, CY, row ? R * 0.33 : R * 0.6, a);
+      el('circle', { cx: px, cy: py, r: 8, fill: '#D9734E', stroke: '#2E3A59', 'stroke-width': 1.5 }, g);
+    }
+    el('path', { d: sector, class: 'outline', fill: 'none', stroke: '#2E3A59', 'stroke-width': 3, 'stroke-linejoin': 'round' }, g);
+    g.addEventListener('click', () => toggle(g));
+  }
+  updateTook();
+}
+
+function toggle(g) {
+  if (busy || done) return;
+  const i = +g.dataset.i;
+  pizza.querySelectorAll('.hint').forEach(h => h.classList.remove('hint'));
+  if (sel.has(i)) { sel.delete(i); g.classList.remove('sel'); g.style.transform = ''; }
+  else { sel.add(i); g.classList.add('sel'); g.style.transform = `translate(${g.dataset.dx}px, ${g.dataset.dy}px)`; }
+  updateTook();
+}
+
+function updateTook() {
+  document.getElementById('k').textContent = sel.size;
+  document.getElementById('n').textContent = n;
+}
+
+document.querySelectorAll('.cut button').forEach(b => b.addEventListener('click', () => {
+  if (busy || done) return;
+  document.querySelectorAll('.cut button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  n = +b.dataset.n; sel.clear(); drawPizza();
+  say(n === 2 ? 'Две половинки. Хм, а получится ли из них две трети?' : `Пицца разрезана на ${n} равных частей.`);
+}));
+
+// --- Bo ---
+const bo = document.getElementById('bo');
+const moL = document.getElementById('moL'), moR = document.getElementById('moR');
+const MOUTH = {
+  normal: ['M568 186 Q585 197 602 186', 'none', 'M696 170 L714 170'],
+  happy:  ['M566 182 Q585 208 604 182 Z', '#2E3A59', 'M694 166 Q705 179 716 166'],
+  angry:  ['M568 194 Q585 181 602 194', 'none', 'M694 173 Q705 164 716 173'],
+};
+function mood(m) {
+  bo.classList.remove('happy', 'angry');
+  void bo.getBBox(); // restart CSS animation
+  if (m !== 'normal') bo.classList.add(m);
+  moL.setAttribute('d', MOUTH[m][0]); moL.setAttribute('fill', MOUTH[m][1]);
+  moR.setAttribute('d', MOUTH[m][2]);
+}
+function sideTalk(lines) {
+  const t = document.getElementById('sideTalk');
+  t.innerHTML = lines.map((l, i) => `<tspan x="742" ${i ? 'dy="16"' : ''}>${l}</tspan>`).join('');
+}
+
+const msg = document.getElementById('msg');
+const say = s => { msg.textContent = s; };
+
+function coins() {
+  const fx = document.getElementById('fx');
+  for (let i = 0; i < 4; i++) {
+    const c = el('circle', { cx: 610 + i * 18, cy: 250, r: 10, fill: '#E0B04A', stroke: '#2E3A59', 'stroke-width': 2.5, class: 'coin' }, fx);
+    c.style.animationDelay = (i * 0.15) + 's';
+    setTimeout(() => c.remove(), 2000);
+  }
+}
+
+// --- patience ---
+let patience = 100;
+const bar = document.getElementById('patience');
+function drawPatience() {
+  bar.style.width = patience + '%';
+  bar.style.background = patience > 50 ? '#8A9A5B' : patience > 25 ? '#E0B04A' : '#D9734E';
+}
+setInterval(() => {
+  if (busy || done) return;
+  patience = Math.max(0, patience - 0.42); // ~60 s total
+  drawPatience();
+  if (patience === 0) {
+    busy = true; mood('angry');
+    sideTalk(['Всё, уходим.', 'Обе головы', 'обиделись!']);
+    say('Бо не дождался и ушёл, хлопнув дверью. Ничего, будет следующий клиент!');
+    setTimeout(reset, 3000);
+  }
+}, 250);
+
+// --- give ---
+const give = document.getElementById('give');
+give.addEventListener('click', () => {
+  if (done) return reset();
+  if (busy) return;
+  const k = sel.size;
+  if (!k) return say('Сначала возьми кусочки: нажми на пиццу.');
+  if (k * 3 === 2 * n) {
+    done = true; mood('happy'); coins();
+    sideTalk(['Ладно!', 'Диета — с', 'понедельника.']);
+    say(n === 3 ? 'Ура! Ровно две трети: 2 куска из 3.' : 'Ура! 4/6 — это то же самое, что 2/3! Хитро придумано.');
+    give.textContent = 'Следующий клиент →'; give.classList.add('next');
+    return;
+  }
+  busy = true; mood('angry');
+  patience = Math.max(5, patience - 20); drawPatience();
+  const d = gcd(k, n);
+  const gave = d > 1 && k !== n ? `${k}/${n} (это ${k / d}/${n / d})` : k === n ? 'целая пицца' : `${k}/${n}`;
+  sideTalk(k * 3 > 2 * n ? ['Многовато!', 'Я же на диете!'] : ['Маловато!', 'Даже мне', 'не хватит.']);
+  say(`Это ${gave}, а я просил две трети!`);
+  setTimeout(() => {
+    busy = false; mood('normal');
+    pizza.querySelectorAll('.slice').forEach(g => { g.classList.remove('sel'); g.style.transform = ''; });
+    sel.clear(); updateTook();
+    if (n % 3 === 0) {
+      const need = 2 * n / 3;
+      pizza.querySelectorAll('.slice').forEach((g, i) => { if (i < need) g.classList.add('hint'); });
+      say(`Подсказка: пицца на ${n} частей — значит, две трети это ${need} куска. Попробуй ещё раз!`);
+    } else {
+      say('Подсказка: на 2 части две трети не отрежешь. Разрежь на 3 (или на 6).');
+    }
+  }, 1600);
+});
+
+function reset() {
+  busy = false; done = false; patience = 100; drawPatience();
+  mood('normal');
+  sideTalk(['А мне ничего.', 'Я на диете.', 'Наверное.']);
+  give.textContent = 'Отдать заказ'; give.classList.remove('next');
+  sel.clear(); drawPizza();
+  say('Нажимай на кусочки, чтобы взять их.');
+}
+
+// --- Osya the octopus (card) ---
+(() => {
+  const s = document.getElementById('osya');
+  for (const [w, c] of [[10, '#2E3A59'], [5.5, '#D9734E']]) {
+    for (let i = 0; i < 8; i++) {
+      const x = 30 + i * 8.6, sway = i % 2 ? 6 : -6;
+      el('path', { d: `M${x} 66 q${sway} 14 0 26 q${-sway} 8 ${sway / 2} 16`, fill: 'none', stroke: c, 'stroke-width': w, 'stroke-linecap': 'round' }, s);
+    }
+  }
+  el('path', { d: 'M24 72 Q22 14 60 14 Q98 14 96 72 Z', fill: '#D9734E', stroke: '#2E3A59', 'stroke-width': 3.5, 'stroke-linejoin': 'round' }, s);
+  el('path', { d: 'M44 70 L60 84 L76 70 Z', fill: '#FFF8EC', stroke: '#2E3A59', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, s);
+  const e1 = el('g', { class: 'blink' }, s), e2 = el('g', { class: 'blink late' }, s);
+  el('circle', { cx: 46, cy: 44, r: 11, fill: '#fff', stroke: '#2E3A59', 'stroke-width': 2.5 }, e1);
+  el('circle', { cx: 41, cy: 41, r: 4.5, fill: '#2E3A59' }, e1);
+  el('circle', { cx: 75, cy: 42, r: 8, fill: '#fff', stroke: '#2E3A59', 'stroke-width': 2.5 }, e2);
+  el('circle', { cx: 79, cy: 46, r: 3.5, fill: '#2E3A59' }, e2);
+  el('path', { d: 'M54 60 q6 5 12 0', fill: 'none', stroke: '#2E3A59', 'stroke-width': 2.5, 'stroke-linecap': 'round' }, s);
+})();
+
+drawPizza(); drawPatience();
+</script>
+</body>
+</html>
