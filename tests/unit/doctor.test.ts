@@ -36,7 +36,9 @@ describe('doctor lines', () => {
 
   it('explain on the chart', () => {
     expect(sp(doctorExplain({ n: 3, d: 4 }, 4))).toBe('Домик разделён на 4 части. 3/4 — это 3 части снизу.');
-    expect(sp(doctorExplain({ n: 1, d: 3 }, 6, true))).toBe('Домик разделён на 6 частей. Одна третья — это 2 части из шести, две шестых.');
+    expect(sp(doctorExplain({ n: 1, d: 3 }, 6, true))).toBe('Домик разделён на шесть частей. Одна третья — это две части из шести, две шестых.');
+    expect(sp(doctorExplain({ n: 1, d: 4 }, 4, true))).toBe('Домик разделён на четыре части. Одна четвёртая — это одна часть снизу.');
+    expect(sp(doctorExplain({ n: 1, d: 3 }, 6))).toBe('Домик разделён на 6 частей. 1/3 — это 2 части из 6, 2/6.');
     expect(doctorExplain({ n: 5, d: 4 }, 4)).toBe('Один целый домик и ещё 1/4: 5/4 = 1 1/4.');
     expect(doctorExplain({ n: 3, d: 2 }, 4, true)).toBe('Три вторых — это один целый домик и ещё половина.');
     expect(doctorExplain({ n: 1, d: 1 }, 4, true)).toBe('Ровно до конька крыши: это один целый домик, четыре четвёртых.');

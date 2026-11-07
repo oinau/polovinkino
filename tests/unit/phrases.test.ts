@@ -13,6 +13,11 @@ describe('spoken phrases', () => {
     expect(bad).toEqual([]);
   });
 
+  it('never put the digits 1 or 2 before a noun (TTS says «один кучка», «два части»)', () => {
+    const bad = phrases.filter(p => /(^|[^\d])[12][\s\u00A0]+[а-яё]/i.test(p.text)).map(p => p.text);
+    expect(bad).toEqual([]);
+  });
+
   it('have unique keys', () => {
     expect(new Set(phrases.map(p => p.key)).size).toBe(phrases.length);
   });

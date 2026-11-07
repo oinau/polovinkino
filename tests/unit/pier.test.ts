@@ -35,13 +35,20 @@ describe('pier lines', () => {
     expect(sp(pilesWord(6))).toBe('6 кучек');
   });
 
+  it('say numbers in words, agreeing in gender', () => {
+    expect(sp(pierExplain({ kind: 'deal', who: 'kok', total: 6, frac: { n: 1, d: 2 } }, true)))
+      .toBe('Шесть монет на две кучки — по три. Половина — это одна кучка, три монеты.');
+    expect(sp(pierExplain({ kind: 'whole', who: 'kok', part: 5, frac: { n: 1, d: 2 }, options: [] }, true)))
+      .toBe('Половина — это одна кучка, а всего кучек две. Две кучки по пять — это десять монет.');
+  });
+
   it('ask and explain', () => {
     expect(sp(pierAsk({ kind: 'deal', who: 'kok', total: 12, frac: { n: 2, d: 3 } }))).toBe('Отдай коку две третьих клада!');
     expect(sp(pierAsk({ kind: 'deal', who: 'rumb', total: 8, frac: { n: 1, d: 4 } }))).toBe('Отдай попугаю Румбу одну четвёртую клада!');
     expect(sp(pierAsk({ kind: 'whole', who: 'kok', part: 5, frac: { n: 1, d: 2 }, options: [] })))
       .toBe('Кок получил половину клада — 5 монет. Сколько монет было в сундуке?');
     expect(sp(pierExplain({ kind: 'deal', who: 'kok', total: 12, frac: { n: 2, d: 3 } }, true)))
-      .toBe('12 монет на 3 кучки — по 4. Две третьих — это 2 кучки, 8 монет.');
+      .toBe('Двенадцать монет на три кучки — по четыре. Две третьих — это две кучки, восемь монет.');
     expect(sp(pierExplain({ kind: 'whole', who: 'kok', part: 4, frac: { n: 1, d: 3 }, options: [] })))
       .toBe('1/3 — это одна кучка, а всего кучек 3. 3 кучки по 4 — это 12 монет.');
   });

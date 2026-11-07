@@ -193,8 +193,14 @@ const plural = (n: number, one: string, few: string, many: string) => {
   return many;
 };
 // A no-break space keeps «4 монеты» on one line in the bubbles.
-export const coinsWord = (n: number) => `${n}\u00A0${plural(n, 'монета', 'монеты', 'монет')}`;
-export const pilesWord = (n: number) => `${n}\u00A0${plural(n, 'кучка', 'кучки', 'кучек')}`;
+// Speech gets numbers in words: TTS reads «1 кучка» as «один кучка». All our nouns are feminine.
+const FEM: Record<number, string> = {
+  1: 'одна', 2: 'две', 3: 'три', 4: 'четыре', 5: 'пять', 6: 'шесть', 7: 'семь', 8: 'восемь', 9: 'девять', 10: 'десять',
+  11: 'одиннадцать', 12: 'двенадцать', 15: 'пятнадцать',
+};
+const num = (n: number, spoken: boolean) => (spoken ? FEM[n] ?? String(n) : String(n));
+export const coinsWord = (n: number, spoken = false) => `${num(n, spoken)}\u00A0${plural(n, 'монета', 'монеты', 'монет')}`;
+export const pilesWord = (n: number, spoken = false) => `${num(n, spoken)}\u00A0${plural(n, 'кучка', 'кучки', 'кучек')}`;
 
 /** What the captain asks. */
 export function pierAsk(r: PierRound): string {
@@ -209,9 +215,9 @@ export function pierExplain(r: PierRound, spoken = false): string {
   const { total, pile, answer } = pierNumbers(r);
   const fr = spoken ? capitalize(words(r.frac)) : str(r.frac);
   if (r.kind === 'whole') {
-    return `${fr} — это одна кучка, а всего кучек ${r.frac.d}. ${capitalize(pilesWord(r.frac.d))} по ${pile} — это ${coinsWord(total)}.`;
+    return `${fr} — это одна кучка, а всего кучек ${num(r.frac.d, spoken)}. ${capitalize(pilesWord(r.frac.d, spoken))} по ${num(pile, spoken)} — это ${coinsWord(total, spoken)}.`;
   }
-  return `${capitalize(coinsWord(total))} на ${pilesWord(r.frac.d)} — по ${pile}. ${fr} — это ${pilesWord(r.frac.n)}, ${coinsWord(answer)}.`;
+  return `${capitalize(coinsWord(total, spoken))} на ${pilesWord(r.frac.d, spoken)} — по ${num(pile, spoken)}. ${fr} — это ${pilesWord(r.frac.n, spoken)}, ${coinsWord(answer, spoken)}.`;
 }
 
 /** Hint while picking piles: how many piles to give. */
@@ -242,7 +248,7 @@ export const PATIENTS: Record<PatientId, { name: string; gen: string }> = {
 
 const NUM_GEN: Record<number, string> = { 2: 'двух', 3: 'трёх', 4: 'четырёх', 6: 'шести' };
 const WHOLE_WORDS: Record<number, string> = { 2: 'две вторых', 3: 'три третьих', 4: 'четыре четвёртых', 6: 'шесть шестых' };
-export const partsWord = (n: number) => `${n}\u00A0${plural(n, 'часть', 'части', 'частей')}`;
+export const partsWord = (n: number, spoken = false) => `${num(n, spoken)}\u00A0${plural(n, 'часть', 'части', 'частей')}`;
 
 const isOne = (h: Frac) => h.n === h.d;
 const above = (h: Frac) => h.n > h.d;
@@ -268,9 +274,9 @@ export function doctorExplain(h: Frac, ticks: number, spoken = false): string {
       : `Один целый домик и ещё ${str(rest)}: ${mixed(h)}.`;
   }
   const k = (h.n * ticks) / h.d;
-  const head = `Домик разделён на ${partsWord(ticks)}.`;
-  if (h.d === ticks) return `${head} ${capitalize(fr(h))} — это ${partsWord(k)} снизу.`;
-  return `${head} ${capitalize(fr(h))} — это ${partsWord(k)} из ${NUM_GEN[ticks] ?? ticks}, ${fr({ n: k, d: ticks })}.`;
+  const head = `Домик разделён на ${partsWord(ticks, spoken)}.`;
+  if (h.d === ticks) return `${head} ${capitalize(fr(h))} — это ${partsWord(k, spoken)} снизу.`;
+  return `${head} ${capitalize(fr(h))} — это ${partsWord(k, spoken)} из ${spoken ? NUM_GEN[ticks] ?? ticks : ticks}, ${fr({ n: k, d: ticks })}.`;
 }
 
 /** Sorting: which one should have come first. */
