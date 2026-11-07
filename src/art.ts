@@ -48,8 +48,8 @@ function pyh(mood: 'normal' | 'happy' | 'worried') {
     <circle cx="276" cy="232" r="2.5" fill="${P.navy}"/>`);
 }
 
-// ---------- Bo, two heads that never agree ----------
-function bo(mood: Mood) {
+// ---------- Ekibas («two heads» in Kazakh), two heads that never agree ----------
+function ekibas(mood: Mood) {
   const skin = mood === 'angry' ? P.terra : P.olive;
   const mL = {
     normal: `<path d="M568 186 Q585 197 602 186" fill="none" ${S} stroke-width="3.5" stroke-linecap="round"/>`,
@@ -234,14 +234,14 @@ function house(roof: string, prop: 'box' | 'boat' | 'flask') {
     ${props}`);
 }
 
-export const CUSTOMERS = ['bo', 'osya', 'tikhon', 'borovik'] as const;
+export const CUSTOMERS = ['ekibas', 'osya', 'tikhon', 'borovik'] as const;
 export type CustomerId = (typeof CUSTOMERS)[number];
 
 export function allArt(): Art[] {
   const list: Art[] = [];
   for (const m of ['normal', 'happy', 'worried'] as const) list.push({ key: `pyh-${m}`, svg: pyh(m), scale: 1.7 });
   for (const m of MOODS) {
-    list.push({ key: `bo-${m}`, svg: bo(m), scale: 1.35 });
+    list.push({ key: `ekibas-${m}`, svg: ekibas(m), scale: 1.35 });
     list.push({ key: `osya-${m}`, svg: osya(m), scale: 3.6 });
     list.push({ key: `tikhon-${m}`, svg: tikhon(m), scale: 4.2 });
     list.push({ key: `borovik-${m}`, svg: borovik(m), scale: 3.8 });

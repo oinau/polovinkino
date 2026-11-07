@@ -23,7 +23,7 @@ interface Lines extends Record<Reaction, string> {
 }
 
 const LINES: Record<CustomerId, Lines> = {
-  bo: {
+  ekibas: {
     order: w => `Мне ${w} пиццы!`,
     happy: 'Вот это сервис! Обе головы довольны.',
     little: 'Маловато! Голов-то у меня две.',
@@ -34,6 +34,7 @@ const LINES: Record<CustomerId, Lines> = {
         'А мне ничего. Я на диете. Наверное.',
         'А мне только корочку. Я на диете.',
         'Мне не надо! …Ну, может, кусочек.',
+        '«Екібас» по-казахски — «две головы»!',
       ],
       happy: 'Ладно, диета с понедельника!',
       little: 'Я же говорил: надо было и мне заказать.',
@@ -403,7 +404,7 @@ export class Pizzeria extends Phaser.Scene {
     this.sideBubble?.destroy();
     this.sideBubble = undefined;
     if (!text) return;
-    // Bo's right head sits at about (1650, 530) on screen.
+    // Ekibas's right head sits at about (1650, 530) on screen.
     const b = new Bubble(this, 1790, 410, 230, 170, { x: 1650 - 1790, y: 528 - 410 });
     b.add(wrapLabel(this, 0, 0, text, 200, 24, 800));
     this.sideBubble = b;

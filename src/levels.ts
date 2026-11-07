@@ -29,7 +29,7 @@ export const PIZZA_LEVELS: PizzaLevel[] = [
     cuts: [],
     orders: [
       { who: 'borovik', want: f(1, 3), preCut: 3 },
-      { who: 'bo', want: f(2, 3), preCut: 3 },
+      { who: 'ekibas', want: f(2, 3), preCut: 3 },
       { who: 'osya', want: f(1, 6), preCut: 6 },
       { who: 'tikhon', want: f(5, 6), preCut: 6 },
       { who: 'borovik', want: f(1, 2), preCut: 2 },
@@ -42,11 +42,11 @@ export const PIZZA_LEVELS: PizzaLevel[] = [
     patience: 75,
     cuts: [2, 3, 4, 6],
     orders: [
-      { who: 'bo', want: f(2, 3) },
+      { who: 'ekibas', want: f(2, 3) },
       { who: 'osya', want: f(3, 4) },
       { who: 'tikhon', want: f(1, 6) },
       { who: 'borovik', want: f(1, 4) },
-      { who: 'bo', want: f(5, 6) },
+      { who: 'ekibas', want: f(5, 6) },
     ],
   },
   {
@@ -57,10 +57,10 @@ export const PIZZA_LEVELS: PizzaLevel[] = [
     cuts: [],
     orders: [
       { who: 'borovik', want: f(1, 3), preCut: 6 },
-      { who: 'bo', want: f(2, 3), preCut: 6 },
+      { who: 'ekibas', want: f(2, 3), preCut: 6 },
       { who: 'osya', want: f(1, 2), preCut: 4 },
       { who: 'tikhon', want: f(1, 2), preCut: 6 },
-      { who: 'bo', want: f(3, 4), preCut: 4 },
+      { who: 'ekibas', want: f(3, 4), preCut: 4 },
     ],
   },
   {
@@ -72,9 +72,9 @@ export const PIZZA_LEVELS: PizzaLevel[] = [
     orders: [
       { who: 'osya', want: f(2, 3) },
       { who: 'tikhon', want: f(1, 4) },
-      { who: 'bo', want: f(5, 6) },
+      { who: 'ekibas', want: f(5, 6) },
       { who: 'borovik', want: f(2, 6), preCut: 3 },
-      { who: 'bo', want: f(3, 4) },
+      { who: 'ekibas', want: f(3, 4) },
       { who: 'osya', want: f(1, 3) },
     ],
   },
