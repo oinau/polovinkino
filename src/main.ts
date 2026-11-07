@@ -3,6 +3,7 @@ import '@fontsource/nunito/700.css';
 import '@fontsource/nunito/800.css';
 import '@fontsource/nunito/900.css';
 import { HEX, W, H } from './theme';
+import { loadRecordings } from './audio';
 import { Boot } from './scenes/Boot';
 import { Town } from './scenes/Town';
 import { Pizzeria } from './scenes/Pizzeria';
@@ -10,7 +11,10 @@ import { Gnomes } from './scenes/Gnomes';
 
 async function start() {
   // Canvas text needs the font (with Cyrillic glyphs) ready before the first draw.
-  await Promise.all(['700', '800', '900'].map(w => document.fonts.load(`${w} 40px Nunito`, 'Пицца 1/3')));
+  await Promise.all([
+    ...['700', '800', '900'].map(w => document.fonts.load(`${w} 40px Nunito`, 'Пицца 1/3')),
+    loadRecordings(),
+  ]);
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,

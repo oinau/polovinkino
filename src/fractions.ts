@@ -17,6 +17,9 @@ export const compare = (a: Frac, b: Frac) => Math.sign(a.n * b.d - b.n * a.d);
 
 export const str = ({ n, d }: Frac) => `${n}/${d}`;
 
+/** «a от b»: a × b, simplified. */
+export const mul = (a: Frac, b: Frac) => simplify({ n: a.n * b.n, d: a.d * b.d });
+
 // Ordinal stems for the denominators used at school ("третья", "шестых"...).
 const STEM: Record<number, string> = {
   2: 'втор', 3: 'трет', 4: 'четвёрт', 5: 'пят', 6: 'шест', 7: 'седьм', 8: 'восьм', 9: 'девят', 10: 'десят', 12: 'двенадцат',

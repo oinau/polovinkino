@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { C, HEX, FONT, W, H } from './theme';
-import { sfx, stopSpeaking } from './audio';
+import { sfx, speak, stopSpeaking } from './audio';
 import { store } from './store';
 
 type Scene = Phaser.Scene;
@@ -344,4 +344,41 @@ export function resultModal(
 
 export function starsFor(mistakes: number) {
   return mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1;
+}
+
+// ---------- heroes ----------
+/** Navy pill with the hero's name. */
+export function nameTag(scene: Scene, x: number, y: number, text: string) {
+  const t = label(scene, 0, -2, text, 30, HEX.paper, 900);
+  const w = t.width + 44, h = 52;
+  const g = scene.add.graphics();
+  g.fillStyle(C.navy).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+  return scene.add.container(x, y, [g, t]);
+}
+
+/** «Знакомься!» card shown the first time a hero appears. */
+export function meetCard(scene: Scene, hero: { name: string; textures: string[]; intro: string }, onClose: () => void) {
+  const layer = modal(scene, 1240, 620);
+  const cx = W / 2, cy = H / 2;
+  const box = { x: cx - 330, w: 460, h: 420 };
+  hero.textures.forEach((key, i) => {
+    const img = scene.add.image(0, 0, key).setOrigin(0.5, 1);
+    const n = hero.textures.length;
+    const scale = Math.min(box.h / img.height, box.w / n / img.width) * 0.95;
+    img.setScale(scale).setPosition(box.x + (i - (n - 1) / 2) * (box.w / n), cy + box.h / 2);
+    if (i === 1) img.setFlipX(true);
+    layer.add(img);
+    scene.tweens.add({ targets: img, y: img.y - 14, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+  });
+  const tx = cx + 260;
+  layer.add(label(scene, tx, cy - 220, 'Знакомься!', 34, HEX.terra, 900));
+  layer.add(wrapLabel(scene, tx, cy - 150, hero.name, 600, 54, 900));
+  layer.add(wrapLabel(scene, tx, cy + 10, hero.intro, 600, 32, 700));
+  layer.add(new Button(scene, tx, cy + 220, 'Привет!', () => {
+    stopSpeaking();
+    layer.destroy();
+    onClose();
+  }, { w: 300, h: 92, fill: C.olive, color: HEX.paper }));
+  speak(hero.intro);
+  return layer;
 }

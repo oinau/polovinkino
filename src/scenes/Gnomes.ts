@@ -2,16 +2,19 @@ import Phaser from 'phaser';
 import { C, HEX, W, H } from '../theme';
 import { GNOME_LEVELS, type Dispute, type GnomeLevel } from '../levels';
 import type { Mood } from '../art';
-import { capitalize, compare, str, words, type Frac } from '../fractions';
-import { sfx, speak } from '../audio';
+import type { Frac } from '../fractions';
+import { sfx, speak, speakSeq } from '../audio';
+import { GNOME_NAMES, GNOME_NOTES, HEROES, explainDispute, gnomeClaims, truthOf, type Truth } from '../lines';
 import { store } from '../store';
-import { Bubble, Button, FractionView, Guide, coinsBurst, label, modal, resultModal, starsFor, steam, topBar, wrapLabel } from '../ui';
+import {
+  Bubble, Button, FractionView, Guide, coinsBurst, label, meetCard, modal, nameTag, resultModal, starsFor, steam, topBar, wrapLabel,
+} from '../ui';
 
 type Who = 'usach' | 'ochkarik';
 
-const GNOME: Record<Who, { x: number; name: string; gen: string; hat: number }> = {
-  usach: { x: 380, name: 'Усач', gen: 'Усача', hat: C.terra },
-  ochkarik: { x: 1540, name: 'Очкарик', gen: 'Очкарика', hat: C.olive },
+const GNOME: Record<Who, { x: number; hat: number }> = {
+  usach: { x: 380, hat: C.terra },
+  ochkarik: { x: 1540, hat: C.olive },
 };
 const FEET = 935;
 const BAR = { x: 700, w: 560, h: 110 };
@@ -60,6 +63,9 @@ export class Gnomes extends Phaser.Scene {
       usach: this.add.image(GNOME.usach.x, FEET, 'usach-normal').setOrigin(0.5, 1),
       ochkarik: this.add.image(GNOME.ochkarik.x, FEET, 'ochkarik-normal').setOrigin(0.5, 1).setFlipX(true),
     };
+    // Name tags beside the gnomes (the space under them is taken by the answer buttons).
+    nameTag(this, 130, 860, GNOME_NAMES.usach.name);
+    nameTag(this, W - 130, 860, GNOME_NAMES.ochkarik.name);
     for (const g of Object.values(this.gnomes)) {
       this.tweens.add({ targets: g, scaleY: 1.03, duration: 800 + Math.random() * 300, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     }
@@ -91,7 +97,8 @@ export class Gnomes extends Phaser.Scene {
     this.next = new Button(this, W / 2, 1000, 'Дальше →', () => this.nextRound(), { w: 360, h: 96, fill: C.olive, color: HEX.paper });
     this.next.setVisible(false);
 
-    this.showIntro();
+    if (store.met('gnomes')) this.showIntro();
+    else meetCard(this, HEROES.gnomes, () => { store.meet('gnomes'); this.showIntro(); });
   }
 
   private drawGround() {
@@ -137,11 +144,8 @@ export class Gnomes extends Phaser.Scene {
     this.next.setVisible(false);
     this.guide.say('');
 
-    const line1 = `У меня ${words(usach)} пирога!`;
-    const trap = usach.n === 1 && ochkarik.n === 1 && ochkarik.d > usach.d;
-    const line2 = trap
-      ? `А у меня ${words(ochkarik)}! ${ochkarik.d} больше, чем ${usach.d}, значит, мне больше!`
-      : `А у меня ${words(ochkarik)}! Мне больше!`;
+    const claims = gnomeClaims(this.dispute);
+    const line1 = claims.usach, line2 = claims.ochkarik;
     this.clearBubbles();
     this.bubbleFor('usach', line1, usach);
     this.time.delayedCall(700, () => {
@@ -149,14 +153,15 @@ export class Gnomes extends Phaser.Scene {
       this.answers.forEach(b => b.setEnabled(true));
       this.guide.say('Ты судья! У кого больше пирога?');
     });
-    speak(`${line1} ${line2}`);
+    speakSeq([line1, line2]);
   }
 
   private bubbleFor(who: Who, text: string, frac?: Frac) {
-    const x = who === 'usach' ? 520 : 1400;
+    const x = who === 'usach' ? 480 : 1440, y = 300;
     const g = this.gnomes[who];
-    const tail = { x: GNOME[who].x - x + (who === 'usach' ? 40 : -40), y: FEET - g.displayHeight - 330 + 10 };
-    const b = new Bubble(this, x, 330, 560, 250, tail);
+    // Tail reaches just past the tip of the hat.
+    const tail = { x: GNOME[who].x - x + (who === 'usach' ? 30 : -30), y: FEET - g.displayHeight - y + 14 };
+    const b = new Bubble(this, x, y, 560, 250, tail);
     if (frac) {
       b.add(wrapLabel(this, 0, -62, text, 500, 30, 800));
       b.add(new FractionView(this, 0, 60, frac.n, frac.d, 44));
@@ -204,19 +209,17 @@ export class Gnomes extends Phaser.Scene {
 
   private answer(pick: Who | 'equal') {
     this.answers.forEach(b => b.setEnabled(false));
-    const { usach, ochkarik } = this.dispute;
-    const cmp = compare(usach, ochkarik);
-    const truth: Who | 'equal' = cmp > 0 ? 'usach' : cmp < 0 ? 'ochkarik' : 'equal';
+    const truth = truthOf(this.dispute);
     const reveal = this.napkins.length > 0;
     this.napkins.forEach((n, i) => this.tweens.add({ targets: n, y: n.y - 60, alpha: 0, duration: 450, delay: i * 150 }));
     this.time.delayedCall(reveal ? 650 : 100, () => this.verdict(pick === truth, truth));
   }
 
-  private verdict(right: boolean, truth: Who | 'equal') {
+  private verdict(right: boolean, truth: Truth) {
     const { usach, ochkarik } = this.dispute;
     this.markDifference(truth);
-    const why = this.explain(truth);
-    const whySpoken = this.explain(truth, true);
+    const why = explainDispute(this.dispute);
+    const whySpoken = explainDispute(this.dispute, true);
     this.clearBubbles();
     if (right) {
       sfx('good');
@@ -257,22 +260,6 @@ export class Gnomes extends Phaser.Scene {
     this.next.setVisible(true);
   }
 
-  /** Written with digits for the screen; spoken in words, since TTS reads «3/4» as «три четыре». */
-  private explain(truth: Who | 'equal', spoken = false) {
-    const { usach, ochkarik } = this.dispute;
-    const nom = (f: Frac) => (spoken ? words(f) : str(f));
-    const gen = (f: Frac) => (spoken ? words(f, 'gen') : str(f));
-    if (truth === 'equal') return `${capitalize(nom(usach))} и ${nom(ochkarik)} — это поровну. Полоски одной длины!`;
-    const big = this.dispute[truth];
-    const small = truth === 'usach' ? ochkarik : usach;
-    const name = GNOME[truth].gen;
-    if (big.d === small.d) return `Кусочки одинаковые, а у ${name} их больше: ${nom(big)} больше ${gen(small)}.`;
-    if (big.n === 1 && small.n === 1) {
-      return `Чем на больше частей делим, тем меньше кусочек. ${capitalize(nom(small))} меньше ${gen(big)}.`;
-    }
-    return `Посмотри на полоски: у ${name} длиннее. ${capitalize(nom(big))} больше ${gen(small)}.`;
-  }
-
   /** Outline where the longer pie sticks out past the shorter one, or a line showing equal length. */
   private markDifference(truth: Who | 'equal') {
     const g = this.marks.clear();
@@ -305,7 +292,7 @@ export class Gnomes extends Phaser.Scene {
     const stars = starsFor(this.mistakes);
     store.setStars('gnomes', this.levelIndex, stars);
     store.addCoins(this.coins);
-    const notes = ['', 'Споры разобраны! Попробуй ещё раз без ошибок.', 'Хороший судья! Почти без ошибок.', 'Самый справедливый судья в Половинкино!'];
+    const notes = GNOME_NOTES;
     const hasNext = this.levelIndex + 1 < GNOME_LEVELS.length;
     resultModal(this, {
       title: 'Все споры решены!',

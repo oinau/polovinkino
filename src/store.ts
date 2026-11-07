@@ -9,6 +9,8 @@ interface Save {
   sound: boolean;
   /** Chosen speech voice name; empty = pick the best one automatically. */
   voice?: string;
+  /** Heroes already introduced with a card. */
+  met?: string[];
 }
 
 const fresh = (): Save => ({ stars: { pizza: [], gnomes: [] }, coins: 0, sound: true });
@@ -42,5 +44,11 @@ export const store = {
   get sound() { return save.sound; },
   set sound(v: boolean) { save.sound = v; persist(); },
   get voice() { return save.voice ?? ''; },
+  met: (id: string) => (save.met ?? []).includes(id),
+  meet(id: string) {
+    if (store.met(id)) return;
+    save.met = [...(save.met ?? []), id];
+    persist();
+  },
   set voice(v: string) { save.voice = v; persist(); },
 };

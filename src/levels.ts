@@ -6,6 +6,8 @@ export interface Order {
   want: Frac;
   /** Pizza arrives already cut into this many parts; otherwise the player cuts it. */
   preCut?: number;
+  /** Only this part of the pizza is on the board; the customer wants `want` of it («половину от половины»). */
+  of?: Frac;
 }
 
 export interface PizzaLevel {
@@ -76,6 +78,21 @@ export const PIZZA_LEVELS: PizzaLevel[] = [
       { who: 'borovik', want: f(2, 6), preCut: 3 },
       { who: 'ekibas', want: f(3, 4) },
       { who: 'osya', want: f(1, 3) },
+    ],
+  },
+  {
+    name: 'Делим дальше',
+    intro: 'На доске осталась только часть пиццы. Клиенты просят долю от этого куска: например, половину от половины. Сначала подумай, какая это часть всей пиццы!',
+    guide: true,
+    patience: 90,
+    cuts: [2, 3, 4, 6, 8],
+    orders: [
+      { who: 'borovik', want: f(1, 2), of: f(1, 2) },
+      { who: 'osya', want: f(1, 3), of: f(1, 2) },
+      { who: 'ekibas', want: f(1, 2), of: f(2, 3) },
+      { who: 'tikhon', want: f(1, 2), of: f(1, 3) },
+      { who: 'ekibas', want: f(2, 3), of: f(1, 2) },
+      { who: 'borovik', want: f(1, 2), of: f(3, 4) },
     ],
   },
 ];

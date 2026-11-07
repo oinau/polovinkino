@@ -1,4 +1,6 @@
 import { store } from './store';
+import { VOICE_SAMPLE } from './lines';
+import { normalizePhrase, phraseKey, type VoiceManifest } from './voicekey';
 
 // Tiny synthesized sound effects: no audio files to ship.
 let ctx: AudioContext | null = null;
@@ -93,23 +95,66 @@ export function nextVoice() {
   if (!list.length) return '';
   const i = list.findIndex(v => v.name === voiceName());
   store.voice = list[(i + 1) % list.length].name;
-  speak('Привет! Я буду читать заказы. Мне две третьих пиццы!');
+  stopSpeaking();
+  tts(VOICE_SAMPLE, () => {});
   return store.voice;
 }
 
-export function speak(text: string) {
-  if (!store.sound || !('speechSynthesis' in window)) return;
-  const v = voice();
-  if (!v) return;
+// ---------- recorded phrases (made in the voice studio) ----------
+let recorded: Record<string, string> = {};
+
+/** Reads public/voice/manifest.json; no manifest simply means no recordings. */
+export async function loadRecordings() {
   try {
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text.replace(/«|»/g, ''));
+    const r = await fetch('voice/manifest.json', { cache: 'no-cache' });
+    if (r.ok) recorded = ((await r.json()) as VoiceManifest).files ?? {};
+  } catch { /* offline or no recordings */ }
+}
+
+let token = 0;
+let playing: HTMLAudioElement | null = null;
+
+function tts(text: string, done: () => void) {
+  const v = voice();
+  if (!v || !('speechSynthesis' in window)) return done();
+  try {
+    const u = new SpeechSynthesisUtterance(normalizePhrase(text));
     u.voice = v;
     u.lang = v.lang;
     u.rate = 0.95;
     u.pitch = 1.1;
+    u.onend = () => done();
+    u.onerror = () => done();
     speechSynthesis.speak(u);
-  } catch { /* a broken voice must never break the game */ }
+  } catch { done(); /* a broken voice must never break the game */ }
 }
 
-export const stopSpeaking = () => { if ('speechSynthesis' in window) speechSynthesis.cancel(); };
+/** Say phrases one after another: a recording if there is one, otherwise the browser voice. */
+export function speakSeq(texts: string[]) {
+  stopSpeaking();
+  if (!store.sound) return;
+  const my = token;
+  const next = (i: number) => {
+    if (my !== token || i >= texts.length) return;
+    const text = texts[i];
+    const file = recorded[phraseKey(text)];
+    if (!file) return tts(text, () => next(i + 1));
+    const a = new Audio(`voice/${file}`);
+    playing = a;
+    let fellBack = false;
+    const fallback = () => { if (!fellBack && my === token) { fellBack = true; tts(text, () => next(i + 1)); } };
+    a.onended = () => next(i + 1);
+    a.onerror = fallback;
+    a.play().catch(fallback);
+  };
+  next(0);
+}
+
+export const speak = (text: string) => speakSeq([text]);
+
+export function stopSpeaking() {
+  token++;
+  playing?.pause();
+  playing = null;
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+}

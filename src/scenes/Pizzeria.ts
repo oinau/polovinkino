@@ -1,69 +1,20 @@
 import Phaser from 'phaser';
 import { C, HEX, W, H } from '../theme';
 import { PIZZA_LEVELS, type Order, type PizzaLevel } from '../levels';
-import { type CustomerId, type Mood } from '../art';
-import { capitalize, sameValue, simplify, str, words, type Frac } from '../fractions';
+import { type Mood } from '../art';
+import { capitalize, mul, sameValue, simplify, str, words, type Frac } from '../fractions';
+import { HEROES, LINES, PIZZA_NOTES, orderLine, type Reaction } from '../lines';
 import { sfx, speak, stopSpeaking } from '../audio';
 import { store } from '../store';
 import {
-  Bubble, Button, FractionView, Guide, coinsBurst, iconButton, label, modal, resultModal, starsFor, steam, topBar, wrapLabel,
+  Bubble, Button, FractionView, Guide, coinsBurst, iconButton, label, meetCard, modal, nameTag, resultModal, starsFor, steam, topBar,
+  wrapLabel,
 } from '../ui';
 
 const PIZZA = { x: 760, y: 676, r: 200 };
 const CUST = { x: 1560, y: 1000 };
 const COUNTER_TOP = 690;
 const GIVE = { x: 1110, y: 1000 };
-
-type Reaction = 'happy' | 'little' | 'much' | 'leave';
-
-interface Lines extends Record<Reaction, string> {
-  order: (w: string) => string;
-  /** Second head's remarks: shown in a small bubble, never read aloud. */
-  side?: Record<Reaction, string> & { order: string[] };
-}
-
-const LINES: Record<CustomerId, Lines> = {
-  ekibas: {
-    order: w => `Мне ${w} пиццы!`,
-    happy: 'Вот это сервис! Обе головы довольны.',
-    little: 'Маловато! Голов-то у меня две.',
-    much: 'Многовато! Одна голова на диете!',
-    leave: 'Всё, уходим! Обе головы обиделись.',
-    side: {
-      order: [
-        'А мне ничего. Я на диете. Наверное.',
-        'А мне только корочку. Я на диете.',
-        'Мне не надо! …Ну, может, кусочек.',
-        '«Екібас» по-казахски — «две головы»!',
-      ],
-      happy: 'Ладно, диета с понедельника!',
-      little: 'Я же говорил: надо было и мне заказать.',
-      much: 'Столько? Я же на диете!',
-      leave: 'Ну и ладно. Я всё равно на диете.',
-    },
-  },
-  osya: {
-    order: w => `${capitalize(w)} пиццы, пожалуйста! Щупальца уже урчат.`,
-    happy: 'Ура! Все восемь щупалец довольны!',
-    little: 'Ой, маловато…',
-    much: 'Ой, столько я не съем!',
-    leave: 'Пойду лучше рыбку поймаю…',
-  },
-  tikhon: {
-    order: () => '',
-    happy: 'СПАСИБО!',
-    little: 'МАЛО!',
-    much: 'МНОГО!',
-    leave: 'УХОЖУ.',
-  },
-  borovik: {
-    order: w => `Дружок, отрежь-ка мне ${w} пиццы.`,
-    happy: 'Вот уважил старика!',
-    little: 'Эх, маловато будет.',
-    much: 'Куда мне столько, дружок?',
-    leave: 'Пойду-ка я домой, вздремну…',
-  },
-};
 
 const pieces = (k: number) => {
   const m10 = k % 10, m100 = k % 100;
@@ -79,6 +30,8 @@ const intoParts = (n: number) => `${n} ${n % 10 >= 2 && n % 10 <= 4 && (n % 100 
 class PizzaView {
   root: Phaser.GameObjects.Container;
   n = 0;
+  /** Part of the pizza on the board; the rest is already gone. */
+  left: Frac = { n: 1, d: 1 };
   sel = new Set<number>();
   private slices: { c: Phaser.GameObjects.Container; hl: Phaser.GameObjects.Graphics; mid: number }[] = [];
   private scene: Phaser.Scene;
@@ -93,24 +46,30 @@ class PizzaView {
     this.root = scene.add.container(PIZZA.x, PIZZA.y);
   }
 
-  /** n = 0 or 1 draws a whole, uncut pizza. */
+  /** Slices on the board (fewer than n when only part of the pizza is left). */
+  get count() { return this.slices.length; }
+
+  /** n = 0 draws what is left as one uncut piece (a whole pizza by default). */
   draw(n: number) {
     this.root.removeAll(true);
     this.slices = [];
     this.sel.clear();
     this.n = n;
-    const parts = Math.max(1, n);
-    const step = (Math.PI * 2) / parts;
+    const whole = this.left.n === this.left.d;
+    const uncut = n < 1;
+    const step = uncut ? (Math.PI * 2 * this.left.n) / this.left.d : (Math.PI * 2) / n;
+    const present = uncut ? 1 : (n * this.left.n) / this.left.d;
+    const full = uncut && whole;
     const r = PIZZA.r;
-    for (let i = 0; i < parts; i++) {
+    for (let i = 0; i < present; i++) {
       const a0 = -Math.PI / 2 + i * step, a1 = a0 + step, mid = (a0 + a1) / 2;
       const c = this.scene.add.container(0, 0);
       const g = this.scene.add.graphics();
       g.fillStyle(C.cheese);
-      if (parts === 1) g.fillCircle(0, 0, r); else { g.slice(0, 0, r, a0, a1, false); g.fillPath(); }
+      if (full) g.fillCircle(0, 0, r); else { g.slice(0, 0, r, a0, a1, false); g.fillPath(); }
       g.lineStyle(24, C.mustard);
       g.beginPath(); g.arc(0, 0, r - 12, a0, a1, false); g.strokePath();
-      const count = Math.max(1, Math.round(12 / parts));
+      const count = Math.max(1, Math.round((12 * step) / (Math.PI * 2)));
       const perRow = Math.ceil(count / 2);
       for (let p = 0; p < count; p++) {
         const row = p % 2, col = Math.floor(p / 2);
@@ -120,11 +79,11 @@ class PizzaView {
         g.lineStyle(3, C.navy).strokeCircle(pr * Math.cos(a), pr * Math.sin(a), 18);
       }
       g.lineStyle(5, C.navy);
-      if (parts === 1) g.strokeCircle(0, 0, r); else { g.slice(0, 0, r, a0, a1, false); g.strokePath(); }
+      if (full) g.strokeCircle(0, 0, r); else { g.slice(0, 0, r, a0, a1, false); g.strokePath(); }
       const hl = this.scene.add.graphics().setVisible(false);
       hl.fillStyle(C.olive, 0.45);
       hl.lineStyle(14, C.olive);
-      if (parts === 1) hl.fillCircle(0, 0, r).strokeCircle(0, 0, r);
+      if (full) hl.fillCircle(0, 0, r).strokeCircle(0, 0, r);
       else { hl.slice(0, 0, r, a0, a1, false); hl.fillPath(); hl.slice(0, 0, r, a0, a1, false); hl.strokePath(); }
       c.add([g, hl]);
       this.root.add(c);
@@ -137,14 +96,17 @@ class PizzaView {
     this.draw(0);
     const lines = this.scene.add.graphics();
     this.root.add(lines);
+    // Knife lines only across what is on the board.
+    const whole = this.left.n === this.left.d;
+    const cuts = whole ? n : (n * this.left.n) / this.left.d + 1;
     let i = 0;
     this.scene.time.addEvent({
-      delay: 110, repeat: n - 1,
+      delay: 110, repeat: cuts - 1,
       callback: () => {
         const a = -Math.PI / 2 + (i * Math.PI * 2) / n;
         lines.lineStyle(6, C.navy).lineBetween(0, 0, PIZZA.r * Math.cos(a), PIZZA.r * Math.sin(a));
         sfx('chop');
-        if (++i === n) {
+        if (++i === cuts) {
           this.scene.time.delayedCall(160, () => {
             this.draw(n);
             this.slices.forEach(s => {
@@ -163,7 +125,8 @@ class PizzaView {
     const dx = x - PIZZA.x, dy = y - PIZZA.y;
     if (dx * dx + dy * dy > (PIZZA.r + 30) ** 2 || this.n < 1) return -1;
     const a = (Math.atan2(dy, dx) + Math.PI / 2 + Math.PI * 4) % (Math.PI * 2);
-    return Math.floor(a / ((Math.PI * 2) / this.n));
+    const i = Math.floor(a / ((Math.PI * 2) / this.n));
+    return i < this.count ? i : -1;
   }
 
   toggle(i: number) {
@@ -225,6 +188,7 @@ export class Pizzeria extends Phaser.Scene {
   private guide!: Guide;
   private pyh!: Phaser.GameObjects.Image;
   private customer?: Phaser.GameObjects.Image;
+  private customerTag?: Phaser.GameObjects.Container;
   private bubble?: Bubble;
   private sideBubble?: Bubble;
   private sideOrderLine = '';
@@ -245,6 +209,7 @@ export class Pizzeria extends Phaser.Scene {
     this.busy = true;
     this.cutButtons = [];
     this.customer = undefined;
+    this.customerTag = undefined;
     this.bubble = undefined;
     this.sideBubble = undefined;
     this.patienceBar = undefined;
@@ -255,6 +220,7 @@ export class Pizzeria extends Phaser.Scene {
     this.pyh = this.add.image(300, 722, 'pyh-normal').setOrigin(0.5, 1);
     this.tweens.add({ targets: this.pyh, y: 716, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     this.drawCounter();
+    nameTag(this, 300, 712, HEROES.pyh.tag);
     this.pizza = new PizzaView(this);
     this.pizza.draw(0);
 
@@ -272,7 +238,8 @@ export class Pizzeria extends Phaser.Scene {
     const hit = this.add.circle(PIZZA.x, PIZZA.y, PIZZA.r + 30).setInteractive({ useHandCursor: true });
     hit.on('pointerup', (p: Phaser.Input.Pointer) => this.tapPizza(p.worldX, p.worldY));
 
-    this.showIntro();
+    if (store.met('pyh')) this.showIntro();
+    else meetCard(this, HEROES.pyh, () => { store.meet('pyh'); this.showIntro(); });
   }
 
   update(_t: number, dt: number) {
@@ -326,7 +293,7 @@ export class Pizzeria extends Phaser.Scene {
   private buildControls() {
     const cuts = this.level.cuts;
     if (cuts.length) {
-      label(this, 320, 830, 'Разрезать на:', 36, HEX.paper, 900);
+      label(this, 125 + (cuts.length - 1) * 65, 830, 'Разрезать на:', 36, HEX.paper, 900);
       cuts.forEach((n, i) => {
         const b = new Button(this, 125 + i * 130, 930, String(n), () => this.chooseCut(n), { w: 110, h: 100, size: 52 });
         b.setData('n', n);
@@ -366,28 +333,58 @@ export class Pizzeria extends Phaser.Scene {
     this.triesOnOrder = 0;
     this.patience = this.level.patience ?? 0;
     this.busy = true;
-    this.pizza.draw(this.order.preCut ?? 0);
+    const of = this.order.of;
+    this.pizza.left = of ?? { n: 1, d: 1 };
+    this.pizza.draw(this.order.preCut ?? (of ? of.d : 0));
+    // With part of a pizza only cuts that split it evenly make sense.
+    this.cutButtons.forEach(b => b.setEnabled(!of || b.getData('n') % of.d === 0));
     this.highlightCut();
     this.updateTook();
     this.setPyh('normal');
     this.guide.hideArrow();
     this.guide.say('');
 
-    const c = this.add.image(W + 300, CUST.y, `${this.order.who}-normal`).setOrigin(0.5, 1);
+    const who = this.order.who;
+    const c = this.add.image(W + 300, CUST.y, `${who}-normal`).setOrigin(0.5, 1);
+    const tag = nameTag(this, W + 300, 1045, HEROES[who].tag);
     this.customer = c;
+    this.customerTag = tag;
     this.tweens.add({ targets: c, y: CUST.y - 16, duration: 160, yoyo: true, repeat: 4 });
+    const start = () => {
+      this.showOrder();
+      this.busy = false;
+      this.stepGuide();
+    };
     this.tweens.add({
-      targets: c, x: CUST.x, duration: 1000, ease: 'Cubic.Out',
+      targets: [c, tag], x: CUST.x, duration: 1000, ease: 'Cubic.Out',
       onComplete: () => {
-        this.showOrder();
-        this.busy = false;
-        this.stepGuide();
+        if (store.met(who)) start();
+        else meetCard(this, HEROES[who], () => { store.meet(who); start(); });
       },
     });
   }
 
   private orderText() {
-    return LINES[this.order.who].order(words(this.order.want, 'acc'));
+    return orderLine(this.order.who, this.order.want, this.order.of);
+  }
+
+  /** What the customer gets in total: «половина от половины» = 1/4. */
+  private target() {
+    return this.order.of ? mul(this.order.want, this.order.of) : this.order.want;
+  }
+
+  /** «1/2» or «1/2 от 1/2». */
+  private orderFraction(y: number, size: number) {
+    const { want, of } = this.order;
+    const c = this.add.container(0, y);
+    if (!of) {
+      c.add(new FractionView(this, 0, 0, want.n, want.d, size));
+    } else {
+      c.add(new FractionView(this, -size * 1.4, 0, want.n, want.d, size));
+      c.add(label(this, 0, 0, 'от', size * 0.7, HEX.navy, 900));
+      c.add(new FractionView(this, size * 1.4, 0, of.n, of.d, size));
+    }
+    return c;
   }
 
   /** Main speech bubble; narrower when the second head needs room on the right. */
@@ -418,10 +415,10 @@ export class Pizzeria extends Phaser.Scene {
     this.sideSay(this.sideOrderLine);
     if (tikhon) {
       b.add(label(this, 0, -95, '(молча показывает табличку)', 28, HEX.navy, 700));
-      b.add(new FractionView(this, 0, 30, this.order.want.n, this.order.want.d, 84));
+      b.add(this.orderFraction(30, this.order.of ? 64 : 84));
     } else {
-      b.add(wrapLabel(this, 0, -75, this.orderText(), 520, 34, 800));
-      b.add(new FractionView(this, 0, 62, this.order.want.n, this.order.want.d, 52));
+      b.add(wrapLabel(this, 0, this.order.of ? -82 : -75, this.orderText(), 520, this.order.of ? 30 : 34, 800));
+      b.add(this.orderFraction(62, this.order.of ? 44 : 52));
       b.add(iconButton(this, 240, 90, 'replay', () => speak(this.orderText()), 32));
       speak(this.orderText());
     }
@@ -449,6 +446,11 @@ export class Pizzeria extends Phaser.Scene {
       this.guide.say('Разрежь пиццу на равные части');
       const target = this.cutButtons[1] ?? this.cutButtons[0];
       if (showArrow && target) this.guide.point(target.x, target.y - 70, 'top'); else this.guide.hideArrow();
+    } else if (this.pizza.sel.size === 0 && this.order.of && (this.pizza.count * this.order.want.n) % this.order.want.d !== 0) {
+      // Too few pieces of the leftover to take the asked part: cut finer first.
+      this.guide.say('Кусочков мало: разрежь пиццу мельче');
+      const target = this.finerCut();
+      if (showArrow && target) this.guide.point(target.x, target.y - 70, 'top'); else this.guide.hideArrow();
     } else if (this.pizza.sel.size === 0) {
       this.guide.say('Нажимай на кусочки, которые отдашь');
       if (showArrow) this.guide.point(PIZZA.x, PIZZA.y - PIZZA.r - 40, 'top'); else this.guide.hideArrow();
@@ -456,6 +458,15 @@ export class Pizzeria extends Phaser.Scene {
       this.guide.say('Готово? Нажми «Отдать»');
       if (showArrow) this.guide.point(GIVE.x + 150, GIVE.y, 'right'); else this.guide.hideArrow();
     }
+  }
+
+  /** Smallest cut that makes the answer a whole number of slices. */
+  private finerCut() {
+    const t = this.target(), of = this.order.of;
+    return this.cutButtons.find(b => {
+      const n = b.getData('n') as number;
+      return (!of || n % of.d === 0) && (t.n * n) % t.d === 0;
+    });
   }
 
   private highlightCut() {
@@ -491,11 +502,10 @@ export class Pizzeria extends Phaser.Scene {
   private serve() {
     if (this.busy || this.pizza.sel.size === 0) return;
     const gave: Frac = { n: this.pizza.sel.size, d: this.pizza.n };
-    const want = this.order.want;
     this.busy = true;
     this.give.setEnabled(false);
     this.guide.hideArrow();
-    if (sameValue(gave, want)) this.success(gave); else this.mistake(gave);
+    if (sameValue(gave, this.target())) this.success(gave); else this.mistake(gave);
   }
 
   private success(gave: Frac) {
@@ -505,10 +515,13 @@ export class Pizzeria extends Phaser.Scene {
     this.setPyh('happy');
     const earned = this.triesOnOrder === 0 ? 3 : 1;
     this.coins += earned;
+    const of = this.order.of;
     const equivalent = gave.d !== want.d;
-    this.guide.say(equivalent
-      ? `Верно! ${str(gave)} — это то же самое, что ${str(want)}!`
-      : `Верно! ${capitalize(words(want))} — это ${pieces(gave.n)} из ${gave.d}.`);
+    this.guide.say(of
+      ? `Верно! ${capitalize(words(want))} от ${words(of, 'gen')} — это ${str(this.target())} всей пиццы.`
+      : equivalent
+        ? `Верно! ${str(gave)} — это то же самое, что ${str(want)}!`
+        : `Верно! ${capitalize(words(want))} — это ${pieces(gave.n)} из ${gave.d}.`);
     this.pizza.serve({ x: CUST.x, y: this.customerTop() + 150 }, () => {
       this.react('happy');
       coinsBurst(this, CUST.x, this.customerTop() + 60, earned);
@@ -518,7 +531,8 @@ export class Pizzeria extends Phaser.Scene {
   }
 
   private mistake(gave: Frac) {
-    const want = this.order.want;
+    const want = this.target();
+    const of = this.order.of;
     this.mistakes++;
     this.triesOnOrder++;
     sfx('bad');
@@ -530,7 +544,9 @@ export class Pizzeria extends Phaser.Scene {
     this.shakeCustomer();
     const s = simplify(gave);
     const same = s.n === gave.n ? '' : ` (то же, что ${str(s)})`;
-    this.guide.say(`Ты дал ${str(gave)}${same}, а нужно ${str(want)}`);
+    this.guide.say(of
+      ? `Ты дал ${str(gave)} пиццы, а нужно ${str(this.order.want)} от ${str(of)}`
+      : `Ты дал ${str(gave)}${same}, а нужно ${str(want)}`);
 
     this.time.delayedCall(2000, () => {
       this.setMood('normal');
@@ -544,8 +560,14 @@ export class Pizzeria extends Phaser.Scene {
       if ((s.n * n) % s.d === 0) {
         const need = (s.n * n) / s.d;
         this.pizza.hint(need);
-        this.guide.say(`Пицца на ${intoParts(n)}: ${str(want)} — это ${pieces(need)}`);
+        this.guide.say(of
+          ? `На доске ${pieces(this.pizza.count)}: ${str(this.order.want)} от них — это ${pieces(need)}`
+          : `Пицца на ${intoParts(n)}: ${str(want)} — это ${pieces(need)}`);
         if (this.level.guide) this.guide.point(PIZZA.x, PIZZA.y - PIZZA.r - 40, 'top');
+      } else if (of) {
+        const b = this.finerCut();
+        this.guide.say(`Кусочков мало: ${str(this.order.want)} от них не взять. Разрежь мельче${b ? ` — на ${b.getData('n')}` : ''}!`);
+        if (b) this.guide.point(b.x, b.y - 70, 'top');
       } else {
         const b = this.cutButtons.find(x => x.getData('n') === want.d)
           ?? this.cutButtons.find(x => x.getData('n') === s.d);
@@ -575,9 +597,14 @@ export class Pizzeria extends Phaser.Scene {
     this.bubble = undefined;
     this.sideSay();
     const c = this.customer!;
+    const tag = this.customerTag;
     this.customer = undefined;
+    this.customerTag = undefined;
     c.setFlipX(true);
-    this.tweens.add({ targets: c, x: W + 300, duration: 900, ease: 'Cubic.In', onComplete: () => c.destroy() });
+    this.tweens.add({
+      targets: tag ? [c, tag] : c, x: W + 300, duration: 900, ease: 'Cubic.In',
+      onComplete: () => { c.destroy(); tag?.destroy(); },
+    });
     this.orderIndex++;
     this.drawDots();
     this.time.delayedCall(700, () => {
@@ -593,7 +620,7 @@ export class Pizzeria extends Phaser.Scene {
     store.setStars('pizza', this.levelIndex, stars);
     store.addCoins(this.coins);
     this.setPyh('happy');
-    const notes = ['', 'Смена пройдена! Попробуй ещё раз без ошибок.', 'Хорошая смена! Почти без ошибок.', 'Идеальная смена! Ни одной ошибки!'];
+    const notes = PIZZA_NOTES;
     const hasNext = this.levelIndex + 1 < PIZZA_LEVELS.length;
     resultModal(this, {
       title: 'Смена окончена!',
