@@ -38,6 +38,7 @@ export class Town extends Phaser.Scene {
       snd.setIcon(store.sound ? 'sound' : 'mute');
     });
     this.addVoicePicker(() => snd.setIcon('sound'));
+    new Button(this, W - 190, H - 48, 'Начать заново', () => this.confirmReset(), { w: 320, h: 64, size: 26 });
 
     const coin = this.add.graphics();
     coin.fillStyle(C.mustard).fillCircle(70, 66, 26).lineStyle(5, C.navy).strokeCircle(70, 66, 26);
@@ -68,6 +69,18 @@ export class Town extends Phaser.Scene {
     // Voices load asynchronously in some browsers.
     if ('speechSynthesis' in window) speechSynthesis.addEventListener('voiceschanged', refresh);
     this.events.once('shutdown', () => speechSynthesis.removeEventListener('voiceschanged', refresh));
+  }
+
+  private confirmReset() {
+    const layer = modal(this, 1000, 460);
+    layer.add(label(this, W / 2, H / 2 - 140, 'Начать заново?', 56, HEX.navy, 900));
+    layer.add(label(this, W / 2, H / 2 - 40, 'Звёзды, монеты и знакомства с героями обнулятся.', 32, HEX.navy, 700));
+    layer.add(label(this, W / 2, H / 2 + 10, 'Звук и выбранный голос останутся.', 28, HEX.navy, 600));
+    layer.add(new Button(this, W / 2 - 170, H / 2 + 130, 'Отмена', () => layer.destroy(), { w: 280, h: 88, size: 34 }));
+    layer.add(new Button(this, W / 2 + 170, H / 2 + 130, 'Сбросить', () => {
+      store.reset();
+      this.scene.restart();
+    }, { w: 280, h: 88, size: 34, fill: C.terra, color: HEX.paper }));
   }
 
   private drawLandscape() {

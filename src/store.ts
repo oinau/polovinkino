@@ -45,6 +45,13 @@ export const store = {
   set sound(v: boolean) { save.sound = v; persist(); },
   get voice() { return save.voice ?? ''; },
   met: (id: string) => (save.met ?? []).includes(id),
+  /** Start over: stars, coins and introductions; sound and voice settings stay. */
+  reset() {
+    save.stars = fresh().stars;
+    save.coins = 0;
+    save.met = [];
+    persist();
+  },
   meet(id: string) {
     if (store.met(id)) return;
     save.met = [...(save.met ?? []), id];
