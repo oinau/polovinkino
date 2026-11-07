@@ -12,6 +12,7 @@ export const HEX = {
   mustard: '#E0B04A',
   mustardDark: '#C9973A',
   cheese: '#F2CF7A',
+  water: '#9DBBC0',
   white: '#FFFFFF',
 } as const;
 

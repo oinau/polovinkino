@@ -241,11 +241,16 @@ function gazebo() {
     <rect x="20" y="266" width="260" height="26" rx="8" fill="${P.sand}" ${S} stroke-width="4"/>`);
 }
 
-function house(roof: string, prop: 'box' | 'boat' | 'flask') {
+function house(roof: string, prop: 'box' | 'boat' | 'flask' | 'doctor') {
   const props = {
     box: `<rect x="196" y="240" width="54" height="44" fill="${P.mustard}" ${S} stroke-width="3"/><path d="M196 254 h54 M223 240 v14" ${S} stroke-width="3"/>`,
     boat: `<path d="M180 262 h86 l-14 24 h-58 z" fill="${P.terra}" ${S} stroke-width="3" stroke-linejoin="round"/><path d="M222 262 V214 l28 40 z" fill="${P.paper}" ${S} stroke-width="3" stroke-linejoin="round"/>`,
     flask: `<path d="M214 222 v20 l-22 38 h62 l-22 -38 v-20 z" fill="${P.olive}" ${S} stroke-width="3" stroke-linejoin="round"/><circle cx="223" cy="210" r="7" fill="${P.paper}" ${S} stroke-width="2.5"/>`,
+    // Height chart on the outside wall and a red cross on the roof.
+    doctor: `<rect x="212" y="130" width="22" height="160" fill="${P.paper}" ${S} stroke-width="3"/>
+      <path d="M212 170 h11 M212 210 h16 M212 250 h11" ${S} stroke-width="3"/>
+      <rect x="116" y="80" width="28" height="28" rx="3" fill="${P.paper}" ${S} stroke-width="3"/>
+      <path d="M130 86 v16 M122 94 h16" stroke="${P.terra}" stroke-width="6" stroke-linecap="round"/>`,
   }[prop];
   return svg([0, 0, 300, 300], `
     <path d="M40 130 L130 50 L220 130 Z" fill="${roof}" ${S} stroke-width="4" stroke-linejoin="round"/>
@@ -254,6 +259,26 @@ function house(roof: string, prop: 'box' | 'boat' | 'flask') {
     <path d="M99 160 v46 M76 183 h46" ${S} stroke-width="3"/>
     <rect x="140" y="200" width="44" height="90" rx="4" fill="${P.sand}" ${S} stroke-width="4"/>
     ${props}`);
+}
+
+/** Crooked, cosy-spooky house of the monster family: glowing windows, bats, a spider. */
+function monsterHouse() {
+  return svg([0, 0, 300, 340], `
+    <path d="M70 120 L150 18 L238 116 Z" fill="${P.navy}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    <path d="M196 64 v-34 h22 v56" fill="${P.sand}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    <path d="M84 118 L222 112 L228 330 L78 330 Z" fill="${P.sand}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    <circle cx="152" cy="78" r="16" fill="${P.mustard}" ${S} stroke-width="3"/>
+    <path d="M152 62 v32 M136 78 h32" ${S} stroke-width="2.5"/>
+    <rect x="102" y="150" width="40" height="48" rx="18" fill="${P.mustard}" ${S} stroke-width="4"/>
+    <rect x="166" y="146" width="40" height="48" rx="18" fill="${P.mustard}" ${S} stroke-width="4"/>
+    <path d="M122 150 v48 M186 146 v48" ${S} stroke-width="3"/>
+    <path d="M128 330 V262 a26 26 0 0 1 52 0 V330" fill="${P.terra}" ${S} stroke-width="4"/>
+    <circle cx="168" cy="292" r="4" fill="${P.navy}"/>
+    <path d="M206 112 v58" ${S} stroke-width="2"/>
+    <circle cx="206" cy="176" r="7" fill="${P.navy}"/>
+    <path d="M200 172 l-7 -4 M200 178 l-7 4 M212 172 l7 -4 M212 178 l7 4" ${S} stroke-width="2"/>
+    <path d="M26 70 q10 -12 20 0 q10 -12 20 0 q-10 4 -20 14 q-10 -10 -20 -14z" fill="${P.navy}"/>
+    <path d="M246 40 q8 -10 16 0 q8 -10 16 0 q-8 3 -16 11 q-8 -8 -16 -11z" fill="${P.navy}"/>`);
 }
 
 function clockTower() {
@@ -296,5 +321,7 @@ export function allArt(): Art[] {
   list.push({ key: 'house-courier', svg: house(P.terra, 'box'), scale: 1.1 });
   list.push({ key: 'house-pier', svg: house(P.olive, 'boat'), scale: 1.1 });
   list.push({ key: 'house-potion', svg: house(P.mustard, 'flask'), scale: 1.1 });
+  list.push({ key: 'house-doctor', svg: house(P.paper, 'doctor'), scale: 1.1 });
+  list.push({ key: 'house-monsters', svg: monsterHouse(), scale: 1.1 });
   return list;
 }
