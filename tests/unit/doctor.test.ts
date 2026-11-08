@@ -41,7 +41,7 @@ describe('doctor lines', () => {
     expect(sp(doctorExplain({ n: 1, d: 3 }, 6))).toBe('Домик разделён на 6 частей. 1/3 — это 2 части из 6, 2/6.');
     expect(doctorExplain({ n: 5, d: 4 }, 4)).toBe('Один целый домик и ещё 1/4: 5/4 = 1 1/4.');
     expect(doctorExplain({ n: 3, d: 2 }, 4, true)).toBe('Три вторых — это один целый домик и ещё половина.');
-    expect(doctorExplain({ n: 1, d: 1 }, 4, true)).toBe('Ровно до конька крыши: это один целый домик, четыре четвёртых.');
+    expect(doctorExplain({ n: 1, d: 1 }, 4, true)).toBe('Ровно до крыши: это один целый домик, четыре четвёртых.');
     expect(mixed({ n: 3, d: 2 })).toBe('3/2 = 1 1/2');
   });
 

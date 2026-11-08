@@ -10,9 +10,9 @@ import { store } from '../store';
 import { Bubble, Button, Guide, coinsBurst, label, meetCard, modal, nameTag, resultModal, starsFor, topBar, wrapLabel } from '../ui';
 
 const GROUND = 960;
-/** Pixels in one «house»: from the ground to the ridge of the doctor's roof. */
+/** Pixels in one «house»: from the ground to the top of the doctor's flat roof. */
 const U = 480;
-const HOUSE = { x: 640, w: 440, wall: 320 };
+const HOUSE = { x: 640, w: 440, roof: 44 };
 const RULER_X = 882;
 const BAR_END = 1150;
 const SPOT_X = 1010;
@@ -118,13 +118,12 @@ export class Doctor extends Phaser.Scene {
     g.fillStyle(C.oliveLight).fillEllipse(300, GROUND, 1300, 380).fillEllipse(1600, GROUND, 1200, 420);
     g.fillStyle(C.olive).fillRect(0, GROUND, W, H - GROUND);
     g.lineStyle(5, C.navy).lineBetween(0, GROUND, W, GROUND);
-    // The doctor's house: from the ground to the ridge is exactly one «house».
-    const { x, w, wall } = HOUSE, left = x - w / 2;
-    g.fillStyle(C.paper).fillTriangle(left - 20, GROUND - wall, x, yOf(1), left + w + 20, GROUND - wall);
-    g.lineStyle(5, C.navy).strokeTriangle(left - 20, GROUND - wall, x, yOf(1), left + w + 20, GROUND - wall);
-    g.fillStyle(C.wall).fillRect(left, GROUND - wall, w, wall).lineStyle(5, C.navy).strokeRect(left, GROUND - wall, w, wall);
-    g.fillStyle(C.paper).fillRoundedRect(x - 30, yOf(1) + 70, 60, 60, 6).lineStyle(4, C.navy).strokeRoundedRect(x - 30, yOf(1) + 70, 60, 60, 6);
-    g.lineStyle(10, C.terra).lineBetween(x, yOf(1) + 82, x, yOf(1) + 118).lineBetween(x - 18, yOf(1) + 100, x + 18, yOf(1) + 100);
+    // The doctor's house has a flat roof, so its top is level with the «1» on the chart.
+    const { x, w, roof } = HOUSE, left = x - w / 2, top = yOf(1);
+    g.fillStyle(C.wall).fillRect(left, top + roof, w, GROUND - top - roof).lineStyle(5, C.navy).strokeRect(left, top + roof, w, GROUND - top - roof);
+    g.fillStyle(C.terra).fillRect(left - 20, top, w + 40, roof).lineStyle(5, C.navy).strokeRect(left - 20, top, w + 40, roof);
+    g.fillStyle(C.paper).fillRoundedRect(x - 30, top + 80, 60, 60, 6).lineStyle(4, C.navy).strokeRoundedRect(x - 30, top + 80, 60, 60, 6);
+    g.lineStyle(10, C.terra).lineBetween(x, top + 92, x, top + 128).lineBetween(x - 18, top + 110, x + 18, top + 110);
     g.fillStyle(C.sand).fillRoundedRect(left + 40, GROUND - 170, 90, 170, 8).lineStyle(5, C.navy).strokeRoundedRect(left + 40, GROUND - 170, 90, 170, 8);
     g.fillStyle(C.paper).fillRoundedRect(left + 200, GROUND - 240, 110, 90, 6).lineStyle(5, C.navy).strokeRoundedRect(left + 200, GROUND - 240, 110, 90, 6);
     g.lineStyle(4, C.navy).lineBetween(left + 255, GROUND - 240, left + 255, GROUND - 150).lineBetween(left + 200, GROUND - 195, left + 310, GROUND - 195);

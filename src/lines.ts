@@ -290,7 +290,7 @@ export const doctorSortAsk = (order: 'asc' | 'desc') =>
 /** Why the height is what it is, counted on a chart with `ticks` divisions per house. */
 export function doctorExplain(h: Frac, ticks: number, spoken = false): string {
   const fr = (x: Frac) => (spoken ? words(x) : str(x));
-  if (isOne(h)) return `Ровно до конька крыши: это один целый домик, ${spoken ? WHOLE_WORDS[ticks] : `${ticks}/${ticks}`}.`;
+  if (isOne(h)) return `Ровно до крыши: это один целый домик, ${spoken ? WHOLE_WORDS[ticks] : `${ticks}/${ticks}`}.`;
   if (above(h)) {
     const rest = { n: h.n - h.d, d: h.d };
     return spoken ? `${capitalize(words(h))} — это один целый домик и ещё ${words(rest)}.`

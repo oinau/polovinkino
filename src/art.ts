@@ -245,14 +245,17 @@ function house(roof: string, prop: 'box' | 'flask' | 'doctor') {
   const props = {
     box: `<rect x="196" y="240" width="54" height="44" fill="${P.mustard}" ${S} stroke-width="3"/><path d="M196 254 h54 M223 240 v14" ${S} stroke-width="3"/>`,
     flask: `<path d="M214 222 v20 l-22 38 h62 l-22 -38 v-20 z" fill="${P.olive}" ${S} stroke-width="3" stroke-linejoin="round"/><circle cx="223" cy="210" r="7" fill="${P.paper}" ${S} stroke-width="2.5"/>`,
-    // Height chart on the outside wall and a red cross on the roof.
-    doctor: `<rect x="212" y="130" width="22" height="160" fill="${P.paper}" ${S} stroke-width="3"/>
-      <path d="M212 170 h11 M212 210 h16 M212 250 h11" ${S} stroke-width="3"/>
-      <rect x="116" y="80" width="28" height="28" rx="3" fill="${P.paper}" ${S} stroke-width="3"/>
-      <path d="M130 86 v16 M122 94 h16" stroke="${P.terra}" stroke-width="6" stroke-linecap="round"/>`,
+    // A flat-roofed clinic: the height chart beside the wall reaches the top of the roof.
+    doctor: `<rect x="56" y="70" width="148" height="63" fill="${P.wall}"/><path d="M56 70 V134 M204 70 V134" ${S} stroke-width="4"/>
+      <rect x="36" y="50" width="188" height="24" fill="${P.terra}" ${S} stroke-width="4"/>
+      <rect x="212" y="50" width="22" height="240" fill="${P.paper}" ${S} stroke-width="3"/>
+      <path d="M212 110 h11 M212 170 h16 M212 230 h11" ${S} stroke-width="3"/>
+      <rect x="116" y="86" width="28" height="28" rx="3" fill="${P.paper}" ${S} stroke-width="3"/>
+      <path d="M130 92 v16 M122 100 h16" stroke="${P.terra}" stroke-width="6" stroke-linecap="round"/>`,
   }[prop];
+  const gable = prop === 'doctor' ? '' : `<path d="M40 130 L130 50 L220 130 Z" fill="${roof}" ${S} stroke-width="4" stroke-linejoin="round"/>`;
   return svg([0, 0, 300, 300], `
-    <path d="M40 130 L130 50 L220 130 Z" fill="${roof}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    ${gable}
     <rect x="56" y="130" width="148" height="160" fill="${P.wall}" ${S} stroke-width="4"/>
     <rect x="76" y="160" width="46" height="46" rx="4" fill="${P.paper}" ${S} stroke-width="4"/>
     <path d="M99 160 v46 M76 183 h46" ${S} stroke-width="3"/>
