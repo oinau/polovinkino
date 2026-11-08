@@ -6,7 +6,7 @@ test('town map loads', async ({ page }) => {
   await noErrors(errors);
 });
 
-for (const [key, levels] of [['Pizzeria', 5], ['Gnomes', 3], ['Clock', 3], ['Pier', 3], ['Doctor', 4], ['Potion', 4]] as const) {
+for (const [key, levels] of [['Pizzeria', 5], ['Gnomes', 3], ['Clock', 3], ['Pier', 3], ['Doctor', 4], ['Potion', 4], ['Monsters', 5]] as const) {
   for (let level = 0; level < levels; level++) {
     test(`${key} level ${level + 1} starts`, async ({ page }) => {
       const errors = await openGame(page, { met: ALL_HEROES });

@@ -1,9 +1,9 @@
 // Everything the characters say. Kept apart from the scenes so the voice studio
 // can list every spoken phrase for recording.
 import type { CustomerId } from './art';
-import { HEIGHTS, pierNumbers, potionNumbers, type CrewId, type Dispute, type IngredientId, type PatientId, type PierRound, type PotionRound } from './levels';
+import { HEIGHTS, monsterAnswer, pierNumbers, potionNumbers, type CrewId, type MonsterId, type MonsterRound, type Dispute, type IngredientId, type PatientId, type PierRound, type PotionRound } from './levels';
 import { capitalize, compare, str, words, type Frac } from './fractions';
-import { hourPart, meetWords, minuteMark, minutesWords, timeWords } from './time';
+import { digital, hourPart, meetWords, minuteMark, minutesWords, timeWords } from './time';
 
 // ---------- pizzeria ----------
 export type Reaction = 'happy' | 'little' | 'much' | 'leave';
@@ -117,7 +117,7 @@ export function explainDispute(d: Dispute, spoken = false) {
 export const VOICE_SAMPLE = 'Привет! Я буду читать заказы. Мне две третьих пиццы!';
 
 // ---------- heroes: name tags and the one-time introduction card ----------
-export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka' | 'pier' | 'heron' | 'giraffe' | 'pip';
+export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka' | 'pier' | 'heron' | 'giraffe' | 'pip' | 'monsters';
 
 export const HEROES: Record<HeroId, { name: string; tag: string; textures: string[]; intro: string }> = {
   pyh: {
@@ -159,6 +159,10 @@ export const HEROES: Record<HeroId, { name: string; tag: string; textures: strin
   pip: {
     name: 'Совёнок Пип', tag: 'Пип', textures: ['pip-happy'],
     intro: 'Это совёнок Пип, ученик волшебника. Колпак ему пока велик, а зелья иногда взрываются. Помоги ему варить точно по рецепту!',
+  },
+  monsters: {
+    name: 'Семейка монстров', tag: '', textures: ['mummy-happy', 'wolf-happy', 'slime-happy', 'spider-happy', 'bat-happy'],
+    intro: 'Это семейка монстров: бабушка-мумия, папа-оборотень, малыш-слизень, паук-аккуратист и летучая мышь из часов. Они совсем не страшные и очень любят гостей!',
   },
   gnomes: {
     name: 'Усач и Очкарик', tag: '', textures: ['usach-happy', 'ochkarik-happy'],
@@ -384,3 +388,78 @@ export const POTION_GAGS: { line: string; effect: 'green' | 'tiny' | 'float' | '
   { line: 'Ой! Пип закружился волчком!', effect: 'spin' },
 ];
 export const POTION_NOTES = ['', 'Зелья сварены! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Волшебник доволен.', 'Ни одной ошибки! Пип — лучший ученик волшебника!'];
+
+// ---------- monster house ----------
+export const MONSTERS: Record<MonsterId, { name: string; dat: string; tag: string }> = {
+  mummy: { name: 'Бабушка-мумия', dat: 'бабушке', tag: 'Бабушка' },
+  wolf: { name: 'Папа-оборотень', dat: 'папе', tag: 'Папа' },
+  slime: { name: 'Малыш-слизень', dat: 'малышу', tag: 'Малыш' },
+  spider: { name: 'Паук', dat: 'пауку', tag: 'Паук' },
+  bat: { name: 'Летучая мышь', dat: 'летучей мыши', tag: 'Мышь' },
+};
+
+const candlesWord = (n: number, spoken = false) => `${num(n, spoken)}\u00A0${plural(n, 'свеча', 'свечи', 'свечей')}`;
+const frw = (n: number, d: number, spoken: boolean) => (spoken ? amount(n, d) : `${n}/${d}`);
+
+export function monsterAsk(r: MonsterRound): string {
+  switch (r.kind) {
+    case 'cake': return `Раздай торт: ${r.gives.map(([who, n]) => `${MONSTERS[who].dat} — ${words({ n, d: r.slices })}`).join(', ')}.`;
+    case 'web': return `Ветер порвал ${words({ n: r.torn, d: r.sectors }, 'acc')} паутины. Какая часть паутины осталась целой?`;
+    case 'candles': return `Горит ${candlesWord(r.total)}. Сквозняк задует ${words(r.frac, 'acc')} свечей. Сколько свечей погаснет?`;
+    case 'grow': return `Утром рост малыша — ${amount(r.was, r.d)} двери. За день он подрос ещё на ${words({ n: r.grew, d: r.d }, 'acc')}. Какой у него теперь рост?`;
+    case 'clock': return `Сейчас ${timeWords(r.now)}. Гости придут через ${hourPart(r.plus)!.words}. Когда придут гости?`;
+  }
+}
+
+/** The question shown with the answer buttons. */
+export const monsterQuestion = (r: MonsterRound) =>
+  ({ cake: 'Сколько торта осталось?', web: 'Сколько паутины целой?', candles: 'Сколько свечей погаснет?', grow: 'Какой теперь рост?', clock: 'Когда придут гости?' })[r.kind];
+
+export function monsterExplain(r: MonsterRound, spoken = false): string {
+  const a = monsterAnswer(r);
+  switch (r.kind) {
+    case 'cake': {
+      const d = r.slices, given = r.gives.reduce((x, [, n]) => x + n, 0), left = d - given;
+      const half = left * 2 === d ? ' Это половина торта!' : '';
+      if (spoken) return `Отдали ${amount(given, d)}. Было ${amount(d, d)}, осталось ${amount(left, d)}.${half}`;
+      return `Отдали ${r.gives.map(([, n]) => `${n}/${d}`).join(' + ')} = ${given}/${d}. Осталось ${d}/${d} − ${given}/${d} = ${left}/${d}.${half}`;
+    }
+    case 'web': {
+      const d = r.sectors, whole = d - r.torn;
+      return `Целая паутина — ${frw(d, d, spoken)}. Порвано ${frw(r.torn, d, spoken)}, значит, цело ${frw(whole, d, spoken)}.`;
+    }
+    case 'candles': {
+      const part = r.total / r.frac.d, n = a as number;
+      const fr = spoken ? capitalize(words(r.frac)) : str(r.frac);
+      return `${capitalize(candlesWord(r.total, spoken))} на ${partsWord(r.frac.d, spoken)} — по ${num(part, spoken)}. ${fr} — это ${partsWord(r.frac.n, spoken)}: ${candlesWord(n, spoken)}.`;
+    }
+    case 'grow': {
+      const d = r.d, sum = r.was + r.grew;
+      const tail = sum === d ? (spoken ? ' Ровно до верха двери!' : ' = 1: ровно до верха двери!')
+        : sum > d ? (spoken ? ` Это одна целая дверь и ещё ${amount(sum - d, d)}: малыш перерос дверь!` : ` = 1 ${sum - d}/${d}: малыш перерос дверь!`) : '';
+      if (spoken) return `${capitalize(amount(r.was, d))} плюс ${amount(r.grew, d)} — это ${amount(sum, d)}.${tail}`;
+      return `${r.was}/${d} + ${r.grew}/${d} = ${sum}/${d}${sum >= d ? tail : '.'}`;
+    }
+    case 'clock': {
+      const t = a as number, part = hourPart(r.plus)!;
+      if (spoken) return `${capitalize(part.words)} — это ${minutesWords(r.plus)}. Сейчас ${timeWords(r.now)}, через ${minutesWords(r.plus)} будет ${timeWords(t)}.`;
+      return `${capitalize(part.words)} — это ${r.plus} минут. ${digital(r.now)} + ${r.plus} минут = ${digital(t)}, ${timeWords(t)}.`;
+    }
+  }
+}
+
+export const MONSTER_LINES = {
+  give: 'Нажимай на кусочки торта: они сами полетят, кому надо.',
+  mend: 'Нажимай на дырки — паук их залатает.',
+  mended: 'Паутина снова целая!',
+  light: 'Нажимай на погасшие свечи — зажги их снова!',
+  lit: 'Фух, снова светло!',
+  grown: 'Ух ты, я расту!',
+  guests: 'Тук-тук! Гости пришли!',
+  yum: 'Ммм, бабушкин торт!',
+};
+export const MONSTER_NOTES = ['', 'Комната пройдена! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Монстры довольны.', 'Ни одной ошибки! Монстры зовут тебя в гости ещё!'];
+export const DIPLOMA = {
+  title: 'Диплом мастера дробей',
+  text: 'Все места Половинкино пройдены, все жители довольны. Этот диплом вручается настоящему мастеру дробей!',
+};

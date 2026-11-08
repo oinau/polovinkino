@@ -3,7 +3,7 @@ import type { StressMode } from './pronounce/dictionary';
 // Progress lives in localStorage: best stars per level and a coin purse.
 const KEY = 'polovinkino.v1';
 
-export type Place = 'pizza' | 'gnomes' | 'clock' | 'pier' | 'doctor' | 'potion';
+export type Place = 'pizza' | 'gnomes' | 'clock' | 'pier' | 'doctor' | 'potion' | 'monsters';
 
 interface Save {
   stars: Record<Place, number[]>;
@@ -17,7 +17,7 @@ interface Save {
   stress?: StressMode;
 }
 
-const fresh = (): Save => ({ stars: { pizza: [], gnomes: [], clock: [], pier: [], doctor: [], potion: [] }, coins: 0, sound: true });
+const fresh = (): Save => ({ stars: { pizza: [], gnomes: [], clock: [], pier: [], doctor: [], potion: [], monsters: [] }, coins: 0, sound: true });
 
 function load(): Save {
   try {

@@ -1,16 +1,17 @@
 // Every phrase the game can say aloud, generated from the level data, for the voice studio.
-import { CLOCK_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, HEIGHTS, PIER_LEVELS, PIZZA_LEVELS, POTION_LEVELS, heightOf } from './levels';
+import { CLOCK_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, HEIGHTS, MONSTER_LEVELS, PIER_LEVELS, PIZZA_LEVELS, POTION_LEVELS, heightOf } from './levels';
 import {
   CLOCK_ASK, CLOCK_FINALE, CLOCK_NOTES, GNOME_NOTES, HEROES, LINES, PIZZA_NOTES, REACTIONS, clockLetter, clockSetExplain,
   clockWaitAsk, clockWaitExplain, DOCTOR_LINES, DOCTOR_NOTES, PATIENTS, doctorExplain, doctorReadAsk, doctorSetAsk, doctorSortAsk,
   doctorSortExplain, explainDispute, POTION_GAGS, POTION_LINES, POTION_NOTES, potionAsk, potionDenominatorHint, potionExplain,
-  potionQuestion, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
+  potionQuestion, DIPLOMA, MONSTER_LINES, MONSTER_NOTES, monsterAsk, monsterExplain, monsterQuestion, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
 } from './lines';
 import { explainTime, timeWords } from './time';
 import { capitalize } from './fractions';
 import { phraseKey } from './voicekey';
 
-export type Speaker = 'narrator' | 'ekibas' | 'osya' | 'borovik' | 'usach' | 'ochkarik' | 'sardina' | 'rumb' | 'heron' | 'giraffe' | 'pip';
+export type Speaker = 'narrator' | 'ekibas' | 'osya' | 'borovik' | 'usach' | 'ochkarik' | 'sardina' | 'rumb' | 'heron' | 'giraffe' | 'pip'
+  | 'mummy' | 'wolf' | 'slime' | 'spider' | 'bat';
 
 export const SPEAKERS: Record<Speaker, { name: string; color: string; rate: number }> = {
   narrator: { name: 'Ведущий', color: '#2E3A59', rate: 1 },
@@ -24,6 +25,11 @@ export const SPEAKERS: Record<Speaker, { name: string; color: string; rate: numb
   heron: { name: 'Доктор Цапля', color: '#2E3A59', rate: 1 },
   giraffe: { name: 'Жираф Жорж', color: '#C9973A', rate: 0.9 },
   pip: { name: 'Совёнок Пип', color: '#D9734E', rate: 1.2 },
+  mummy: { name: 'Бабушка-мумия', color: '#8A9A5B', rate: 0.85 },
+  wolf: { name: 'Папа-оборотень', color: '#5F6E3A', rate: 0.8 },
+  slime: { name: 'Малыш-слизень', color: '#A9B57E', rate: 1.3 },
+  spider: { name: 'Паук', color: '#2E3A59', rate: 1.1 },
+  bat: { name: 'Летучая мышь', color: '#2E3A59', rate: 1.35 },
 };
 
 export interface Phrase {
@@ -156,6 +162,28 @@ export function allPhrases(): Phrase[] {
   for (const line of Object.values(POTION_LINES)) add(line, 'pip', 'Зельеварня');
   for (const g of POTION_GAGS) add(g.line, 'narrator', 'Зельеварня, превращение');
   POTION_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Зельеварня, итог'));
+
+  const ROOM_SPEAKER = { kitchen: 'mummy', attic: 'spider', cellar: 'wolf', nursery: 'slime', parlor: 'bat' } as const;
+  MONSTER_LEVELS.forEach(lv => {
+    const where = `Дом монстров, ${lv.name.toLowerCase()}`;
+    add(lv.intro, 'narrator', `${where}, вступление`);
+    for (const r of lv.rounds) {
+      add(monsterAsk(r), ROOM_SPEAKER[lv.room], `${where}, задание`);
+      add(monsterQuestion(r), 'narrator', `${where}, вопрос`);
+      add(monsterExplain(r, true), 'narrator', `${where}, ошибка`);
+      add(`Верно! ${monsterExplain(r, true)}`, 'narrator', `${where}, верно`);
+    }
+  });
+  add(MONSTER_LINES.yum, 'mummy', 'Дом монстров, кухня');
+  add(MONSTER_LINES.give, 'narrator', 'Дом монстров, кухня');
+  add(MONSTER_LINES.mend, 'narrator', 'Дом монстров, чердак');
+  add(`${MONSTER_LINES.mended}`, 'spider', 'Дом монстров, чердак');
+  add(MONSTER_LINES.light, 'narrator', 'Дом монстров, подвал');
+  add(MONSTER_LINES.lit, 'wolf', 'Дом монстров, подвал');
+  add(MONSTER_LINES.grown, 'slime', 'Дом монстров, детская');
+  add(MONSTER_LINES.guests, 'bat', 'Дом монстров, гостиная');
+  MONSTER_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Дом монстров, итог'));
+  add(`${DIPLOMA.title}! ${DIPLOMA.text}`, 'narrator', 'Диплом');
 
   return list;
 }

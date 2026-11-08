@@ -403,3 +403,90 @@ export function potionOptions(r: PotionRound): Frac[] {
   const n = offs.find(k => k > 0 && !same(f(k, r.d), right) && !same(f(k, r.d), sumDen))!;
   return [right, sumDen, f(n, r.d)];
 }
+
+// ---------- monster house: the finale, a room per topic ----------
+export type MonsterId = 'mummy' | 'wolf' | 'slime' | 'spider' | 'bat';
+export type MonsterRoom = 'kitchen' | 'attic' | 'cellar' | 'nursery' | 'parlor';
+
+export type MonsterRound =
+  /** Grandma's cake in `slices`: give everyone their share, then say how much is left. */
+  | { kind: 'cake'; slices: number; gives: [MonsterId, number][]; options: Frac[] }
+  /** A web of `sectors`, `torn` of them broken: how much is whole? Then mend it. */
+  | { kind: 'web'; sectors: number; torn: number; options: Frac[] }
+  /** A draught will blow out `frac` of `total` candles: how many? Then light them again. */
+  | { kind: 'candles'; total: number; frac: Frac; options: number[] }
+  /** The baby was `was`/d of the door tall and grew by `grew`/d: how tall now? */
+  | { kind: 'grow'; d: number; was: number; grew: number; options: Frac[] }
+  /** Guests come in `plus` minutes (a nice part of an hour); it is `now`. When do they come? Times as in the clock square. */
+  | { kind: 'clock'; now: number; plus: number; options: number[] };
+
+export interface MonsterLevel {
+  room: MonsterRoom;
+  name: string;
+  intro: string;
+  rounds: MonsterRound[];
+}
+
+export const MONSTER_LEVELS: MonsterLevel[] = [
+  {
+    room: 'kitchen',
+    name: 'Кухня',
+    intro: 'Бабушка-мумия испекла торт и разрезала его на восемь кусков. Раздай кусочки семье и посчитай, сколько торта осталось.',
+    rounds: [
+      { kind: 'cake', slices: 8, gives: [['wolf', 3], ['slime', 1]], options: [f(4, 8), f(4, 16), f(3, 8)] },
+      { kind: 'cake', slices: 8, gives: [['spider', 1], ['wolf', 2], ['bat', 2]], options: [f(3, 8), f(5, 8), f(3, 24)] },
+      { kind: 'cake', slices: 8, gives: [['wolf', 4], ['slime', 2]], options: [f(2, 8), f(6, 8), f(2, 16)] },
+    ],
+  },
+  {
+    room: 'attic',
+    name: 'Чердак',
+    intro: 'На чердаке живёт паук-аккуратист. Ночью ветер порвал его паутину. Сколько паутины осталось целой? Потом помоги её починить.',
+    rounds: [
+      { kind: 'web', sectors: 8, torn: 3, options: [f(5, 8), f(3, 8), f(5, 3)] },
+      { kind: 'web', sectors: 6, torn: 2, options: [f(4, 6), f(2, 6), f(4, 2)] },
+      { kind: 'web', sectors: 8, torn: 4, options: [f(4, 8), f(8, 4), f(3, 8)] },
+    ],
+  },
+  {
+    room: 'cellar',
+    name: 'Подвал',
+    intro: 'Папа-оборотень — большой и лохматый, но боится темноты. В подвале горят свечи, а из щели дует сквозняк. Сколько свечей он задует?',
+    rounds: [
+      { kind: 'candles', total: 12, frac: f(1, 4), options: [3, 4, 6] },
+      { kind: 'candles', total: 9, frac: f(1, 3), options: [3, 6, 2] },
+      { kind: 'candles', total: 12, frac: f(2, 3), options: [8, 4, 6] },
+    ],
+  },
+  {
+    room: 'nursery',
+    name: 'Детская',
+    intro: 'Малыш-слизень растёт не по дням, а по часам. Его рост отмечают на дверном косяке: от пола до верха двери — одна дверь.',
+    rounds: [
+      { kind: 'grow', d: 4, was: 1, grew: 2, options: [f(3, 4), f(3, 8), f(2, 4)] },
+      { kind: 'grow', d: 4, was: 2, grew: 2, options: [f(4, 4), f(4, 8), f(3, 4)] },
+      { kind: 'grow', d: 4, was: 3, grew: 2, options: [f(5, 4), f(5, 8), f(4, 4)] },
+    ],
+  },
+  {
+    room: 'parlor',
+    name: 'Гостиная',
+    intro: 'В гостиной большие часы, а вместо кукушки в них живёт летучая мышь. Сегодня к монстрам придут гости. Подскажи, когда!',
+    rounds: [
+      { kind: 'clock', now: 6 * 60 + 40, plus: 20, options: [7 * 60, 7 * 60 + 20, 6 * 60 + 50] },
+      { kind: 'clock', now: 6 * 60 + 15, plus: 15, options: [6 * 60 + 30, 6 * 60 + 45, 6 * 60 + 20] },
+      { kind: 'clock', now: 6 * 60, plus: 45, options: [6 * 60 + 45, 6 * 60 + 15, 7 * 60 + 45] },
+    ],
+  },
+];
+
+/** The right answer of a monster round: a fraction, a number of candles, or a time. */
+export function monsterAnswer(r: MonsterRound): Frac | number {
+  switch (r.kind) {
+    case 'cake': return f(r.slices - r.gives.reduce((a, [, n]) => a + n, 0), r.slices);
+    case 'web': return f(r.sectors - r.torn, r.sectors);
+    case 'candles': return (r.total / r.frac.d) * r.frac.n;
+    case 'grow': return f(r.was + r.grew, r.d);
+    case 'clock': return r.now + r.plus;
+  }
+}

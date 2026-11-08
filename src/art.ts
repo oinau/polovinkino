@@ -458,6 +458,87 @@ function pip(mood: Mood) {
     <circle cx="92" cy="4" r="6" fill="${P.mustard}" ${S} stroke-width="2.5"/>`);
 }
 
+// ---------- Monster house: a cosy, slightly spooky family ----------
+const monsterEyes = (mood: Mood, l: [number, number], r: [number, number], rad = 9, white = true) => {
+  const [lx, ly] = l, [rx, ry] = r;
+  if (mood === 'happy') return `<path d="M${lx - rad} ${ly + 2} q${rad} -${rad + 2} ${2 * rad} 0 M${rx - rad} ${ry + 2} q${rad} -${rad + 2} ${2 * rad} 0" fill="none" ${S} stroke-width="4" stroke-linecap="round"/>`;
+  const ball = (x: number, y: number) => (white ? `<circle cx="${x}" cy="${y}" r="${rad}" fill="#fff" ${S} stroke-width="3"/>` : '') + `<circle cx="${x + 1}" cy="${y + 1}" r="${rad * 0.45}" fill="${P.navy}"/>`;
+  const brows = mood === 'angry' ? `<path d="M${lx - rad - 3} ${ly - rad - 8} L${lx + rad} ${ly - rad} M${rx + rad + 3} ${ry - rad - 8} L${rx - rad} ${ry - rad}" ${S} stroke-width="4" stroke-linecap="round"/>` : '';
+  return ball(lx, ly) + ball(rx, ry) + brows;
+};
+const monsterMouth = (mood: Mood, x: number, y: number, w = 12) => ({
+  normal: `<path d="M${x - w} ${y} Q${x} ${y + w * 0.7} ${x + w} ${y}" fill="none" ${S} stroke-width="3.5" stroke-linecap="round"/>`,
+  happy: `<path d="M${x - w} ${y - 2} Q${x} ${y + w * 1.4} ${x + w} ${y - 2} Z" fill="${P.navy}" ${S} stroke-width="3" stroke-linejoin="round"/>`,
+  angry: `<path d="M${x - w} ${y + 6} Q${x} ${y - w * 0.4} ${x + w} ${y + 6}" fill="none" ${S} stroke-width="3.5" stroke-linecap="round"/>`,
+})[mood];
+
+function mummy(mood: Mood) {
+  return svg([0, 0, 140, 210], `
+    <path d="M30 70 Q30 14 70 12 Q110 14 110 70 L116 196 Q70 210 24 196 Z" fill="${P.paper}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    <path d="M32 46 L108 58 M28 92 L112 80 M26 122 L114 136 M25 160 L115 150 M24 186 L116 178" fill="none" stroke="${P.sand}" stroke-width="7" stroke-linecap="round"/>
+    <path d="M40 120 H100 V190 Q70 200 40 190 Z" fill="${P.terra}" ${S} stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M48 136 H92" stroke="${P.paper}" stroke-width="4"/>
+    <rect x="40" y="58" width="60" height="30" rx="12" fill="${P.navy}"/>
+    ${monsterEyes(mood, [56, 73], [84, 73], 8)}
+    ${monsterMouth(mood, 70, 102, 10)}
+    <path d="M104 40 q18 6 16 26" fill="none" stroke="${P.sand}" stroke-width="6" stroke-linecap="round"/>`);
+}
+
+function wolf(mood: Mood) {
+  return svg([0, 0, 170, 220], `
+    <path d="M38 210 V178 M132 210 V178" ${S} stroke-width="16" stroke-linecap="round"/>
+    <path d="M26 180 Q20 110 85 104 Q150 110 144 180 Q85 196 26 180 Z" fill="${P.floor}" ${S} stroke-width="4"/>
+    <path d="M70 116 L85 160 L100 116 Z" fill="${P.terra}" ${S} stroke-width="3" stroke-linejoin="round"/>
+    <path d="M36 42 L48 4 L70 32 Z M134 42 L122 4 L100 32 Z" fill="${P.floor}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    <path d="M30 70 Q24 28 85 26 Q146 28 140 70 Q148 100 120 114 Q85 126 50 114 Q22 100 30 70 Z" fill="${P.floor}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    <path d="M30 70 l-12 8 l14 4 M140 70 l12 8 l-14 4" fill="none" ${S} stroke-width="3.5" stroke-linejoin="round"/>
+    <ellipse cx="85" cy="92" rx="30" ry="20" fill="${P.sand}" ${S} stroke-width="3"/>
+    <ellipse cx="85" cy="80" rx="9" ry="6" fill="${P.navy}"/>
+    ${monsterEyes(mood, [64, 62], [106, 62], 9)}
+    ${monsterMouth(mood, 85, 96, 14)}
+    <path d="M76 98 l3 9 l3 -8 M88 98 l3 8 l3 -9" fill="#fff" ${S} stroke-width="2" stroke-linejoin="round"/>`);
+}
+
+function slime(mood: Mood) {
+  return svg([0, 0, 150, 170], `
+    <path d="M18 160 Q8 120 28 84 Q46 22 76 16 Q106 22 122 84 Q142 120 132 160 Q118 154 106 162 Q90 150 76 162 Q60 150 46 162 Q32 154 18 160 Z" fill="${P.oliveLight}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    <path d="M48 40 Q56 30 66 30" fill="none" stroke="${P.paper}" stroke-width="6" stroke-linecap="round"/>
+    ${monsterEyes(mood, [60, 84], [92, 84], 13)}
+    ${monsterMouth(mood, 76, 116, 14)}
+    <path d="M100 124 q4 10 0 16 q-4 -6 0 -16 z" fill="${P.water}" ${S} stroke-width="2"/>`);
+}
+
+function spider(mood: Mood) {
+  let legs = '';
+  for (const side of [-1, 1]) for (let i = 0; i < 4; i++) {
+    const y = 84 + i * 16, x0 = 75 + side * 26, x1 = 75 + side * (62 + (i % 2) * 6), x2 = 75 + side * (72 + i * 4);
+    legs += `<path d="M${x0} ${y} Q${x1} ${y - 30} ${x2} ${y + 34}" fill="none" ${S} stroke-width="5" stroke-linecap="round"/>`;
+  }
+  return svg([0, 0, 150, 170], `
+    <path d="M75 0 V40" ${S} stroke-width="2.5"/>
+    ${legs}
+    <ellipse cx="75" cy="100" rx="38" ry="40" fill="${P.navy}" ${S} stroke-width="3"/>
+    <circle cx="75" cy="58" r="26" fill="${P.navy}" ${S} stroke-width="3"/>
+    ${mood === 'happy'
+      ? `<path d="M56 60 q7 -8 14 0 M80 60 q7 -8 14 0" fill="none" stroke="${P.mustard}" stroke-width="4" stroke-linecap="round"/>`
+      : `<circle cx="63" cy="56" r="9" fill="${P.mustard}"/><circle cx="87" cy="56" r="9" fill="${P.mustard}"/><circle cx="64" cy="57" r="4" fill="${P.navy}"/><circle cx="88" cy="57" r="4" fill="${P.navy}"/>`}
+    ${mood === 'angry' ? `<path d="M52 42 L70 48 M98 42 L80 48" stroke="${P.mustard}" stroke-width="4" stroke-linecap="round"/>` : ''}
+    <path d="M${mood === 'angry' ? '66 76 Q75 70 84 76' : '66 72 Q75 80 84 72'}" fill="none" stroke="${P.paper}" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M62 128 L75 120 L88 128 L75 136 Z" fill="${P.terra}" stroke="${P.paper}" stroke-width="2"/>`);
+}
+
+function bat(mood: Mood) {
+  return svg([0, 0, 200, 140], `
+    <path d="M100 60 Q60 20 8 40 Q24 52 20 70 Q40 62 46 80 Q62 70 74 88 Z" fill="${P.navy}" ${S} stroke-width="3" stroke-linejoin="round"/>
+    <path d="M100 60 Q140 20 192 40 Q176 52 180 70 Q160 62 154 80 Q138 70 126 88 Z" fill="${P.navy}" ${S} stroke-width="3" stroke-linejoin="round"/>
+    <path d="M78 34 L84 8 L96 30 Z M122 34 L116 8 L104 30 Z" fill="${P.navy}" ${S} stroke-width="3" stroke-linejoin="round"/>
+    <ellipse cx="100" cy="70" rx="32" ry="40" fill="${P.navy}"/>
+    ${monsterEyes(mood, [88, 60], [112, 60], 9)}
+    ${monsterMouth(mood, 100, 84, 10).replace(/stroke="#2E3A59"/g, `stroke="${P.paper}"`)}
+    <path d="M93 88 l3 7 l3 -6 M101 88 l3 6 l3 -7" fill="#fff"/>
+    <path d="M90 110 v14 M110 110 v14" stroke="${P.navy}" stroke-width="5" stroke-linecap="round"/>`);
+}
+
 function clockTower() {
   let ticks = '';
   for (let i = 0; i < 12; i++) {
@@ -496,6 +577,11 @@ export function allArt(): Art[] {
     list.push({ key: `heron-${m}`, svg: heron(m), scale: 2.2 });
     list.push({ key: `giraffe-${m}`, svg: giraffe(m), scale: 2.4 });
     list.push({ key: `pip-${m}`, svg: pip(m), scale: 1.8 });
+    list.push({ key: `mummy-${m}`, svg: mummy(m), scale: 2 });
+    list.push({ key: `wolf-${m}`, svg: wolf(m), scale: 2 });
+    list.push({ key: `slime-${m}`, svg: slime(m), scale: 2 });
+    list.push({ key: `spider-${m}`, svg: spider(m), scale: 2 });
+    list.push({ key: `bat-${m}`, svg: bat(m), scale: 2 });
   }
   list.push({ key: 'giraffe-surprised', svg: giraffe('surprised'), scale: 2.4 });
   list.push({ key: 'house-pizza', svg: pizzeriaHouse(), scale: 1.6 });

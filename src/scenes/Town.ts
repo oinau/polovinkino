@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
 import { C, HEX, W, H } from '../theme';
 import { store, type Place } from '../store';
-import { CLOCK_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, PIER_LEVELS, PIZZA_LEVELS, POTION_LEVELS } from '../levels';
+import { CLOCK_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, MONSTER_LEVELS, PIER_LEVELS, PIZZA_LEVELS, POTION_LEVELS } from '../levels';
 import { Button, label, iconButton, modal, starShape } from '../ui';
 import { nextVoice, ruVoices, sfx, voiceName } from '../audio';
 import { FAR_FACTOR, MID_FACTOR, RIVER, ROAD_END, SPOTS, WORLD_W, clampScroll, maxScroll, nextSpot, scrollTo, type Spot } from '../map';
 
-const LEVELS: Record<Place, { name: string }[]> = { pizza: PIZZA_LEVELS, gnomes: GNOME_LEVELS, clock: CLOCK_LEVELS, pier: PIER_LEVELS, doctor: DOCTOR_LEVELS, potion: POTION_LEVELS };
-const SCENE: Record<Place, string> = { pizza: 'Pizzeria', gnomes: 'Gnomes', clock: 'Clock', pier: 'Pier', doctor: 'Doctor', potion: 'Potion' };
+const LEVELS: Record<Place, { name: string }[]> = { pizza: PIZZA_LEVELS, gnomes: GNOME_LEVELS, clock: CLOCK_LEVELS, pier: PIER_LEVELS, doctor: DOCTOR_LEVELS, potion: POTION_LEVELS, monsters: MONSTER_LEVELS };
+const SCENE: Record<Place, string> = { pizza: 'Pizzeria', gnomes: 'Gnomes', clock: 'Clock', pier: 'Pier', doctor: 'Doctor', potion: 'Potion', monsters: 'Monsters' };
 
 /** A place is done when every level has at least one star. */
 const done = (p: Place) => LEVELS[p].every((_, i) => store.stars(p, i) > 0);
@@ -42,7 +42,9 @@ export class Town extends Phaser.Scene {
     for (const s of SPOTS) this.addSpot(world, s);
     this.addResidents(world, ground);
     const next = nextSpot(SPOTS, done);
-    if (next) this.addMarker(world, next);
+    if (next) this.addMarker(world, next.x, next.y - this.textures.getFrame(next.key).height * next.scale + 10);
+    // Everything on the road is done: the arrow points up to the monster house.
+    else if (!done('monsters')) this.addMarker(world, ROAD_END.x, ROAD_END.y - 190);
 
     label(this, W / 2, 90, 'Половинкино', 84, HEX.navy, 900);
     label(this, W / 2, 160, 'город, где всё делят на части', 34, HEX.terra, 800);
@@ -162,7 +164,8 @@ export class Town extends Phaser.Scene {
       new Phaser.Math.Vector2(x + 250, top + 110), new Phaser.Math.Vector2(x + 20, top + 6),
     ]);
     layer.add(g);
-    const house = this.add.image(x, top + 8, 'house-monsters').setOrigin(0.5, 1).setScale(0.62);
+    const house = this.add.image(x, top + 8, 'house-monsters').setOrigin(0.5, 1).setScale(0.62).setInteractive({ useHandCursor: true });
+    house.on('pointerup', () => this.openMonsters());
     layer.add(house);
   }
 
@@ -221,6 +224,11 @@ export class Town extends Phaser.Scene {
       v(ROAD_END.x + 100, ROAD_END.y - 130), v(ROAD_END.x + 70, ROAD_END.y - 100), v(ROAD_END.x - 90, ROAD_END.y - 100)], true);
     layer.add(g);
     layer.add(label(this, ROAD_END.x - 6, ROAD_END.y - 131, 'к монстрам', 26, HEX.navy, 900));
+    // The signpost carries the monster house's stars and opens it too.
+    layer.add(this.plaque(ROAD_END.x, ROAD_END.y + 92, 'Дом монстров', { have: store.totalStars('monsters'), total: MONSTER_LEVELS.length * 3 }));
+    const zone = this.add.zone(ROAD_END.x, ROAD_END.y, 260, 340).setInteractive({ useHandCursor: true });
+    zone.on('pointerup', () => this.openMonsters());
+    layer.add(zone);
     return groundY;
   }
 
@@ -287,15 +295,19 @@ export class Town extends Phaser.Scene {
     else this.tweens.add({ targets: tikhon, y: tikhon.y - 14, duration: 380, yoyo: true, repeat: -1, repeatDelay: 900, ease: 'Quad.Out' });
   }
 
+  private openMonsters() {
+    if (this.moved) return;
+    sfx('click');
+    this.openPicker('monsters', 'Дом монстров');
+  }
+
   /** Bouncing arrow over the place to play next. */
-  private addMarker(layer: Phaser.GameObjects.Container, s: Spot) {
-    const img = this.textures.getFrame(s.key);
-    const y = s.y - img.height * s.scale + 10;
+  private addMarker(layer: Phaser.GameObjects.Container, x: number, y: number) {
     const g = this.add.graphics();
     const pts = [[-26, -70], [26, -70], [26, -30], [50, -30], [0, 16], [-50, -30], [-26, -30]].map(([x, y]) => new Phaser.Math.Vector2(x, y));
     g.fillStyle(C.navy).fillPoints(pts.map(p => new Phaser.Math.Vector2(p.x, p.y + 6)), true);
     g.fillStyle(C.mustard).fillPoints(pts, true).lineStyle(5, C.navy).strokePoints(pts, true);
-    g.setPosition(s.x, y);
+    g.setPosition(x, y);
     layer.add(g);
     this.tweens.add({ targets: g, y: y - 26, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
   }
