@@ -26,6 +26,8 @@ describe('courier lines', () => {
     expect(courierAsk('osya', { n: 3, d: 4 })).toBe('Ося ждёт пиццу. Дом — три четвёртых пути от пиццерии.');
     expect(sp(courierExplain(COURIER_LEVELS[1], { n: 1, d: 3 }))).toBe('Улица разделена на 6 частей. 1/3 — это 2 части пути от пиццерии.');
     expect(sp(courierExplain(COURIER_LEVELS[2], { n: 2, d: 3 }, true))).toBe('Раздели улицу в уме на три части. Две третьих — это две части пути от пиццерии.');
-    expect(courierExplain(COURIER_LEVELS[3], { n: 5, d: 4 })).toBe('5/4 = 1 1/4: проедь отметку 1 и ещё 1/4.');
+    expect(courierExplain(COURIER_LEVELS[3], { n: 5, d: 4 })).toBe('5/4 = 1 1/4: одна целая улица до перекрёстка и ещё 1/4 второй улицы.');
+    expect(sp(courierExplain(COURIER_LEVELS[3], { n: 3, d: 2 }, true))).toBe('Три вторых — это одна целая улица до перекрёстка и ещё половина второй улицы.');
+    expect(sp(courierExplain(COURIER_LEVELS[3], { n: 1, d: 2 }))).toBe('Каждая улица разделена на 4 части. 1/2 — это 2 части пути от пиццерии.');
   });
 });

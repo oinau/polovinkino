@@ -521,11 +521,12 @@ export function courierExplain(lv: CourierLevel, at: Frac, spoken = false): stri
   const fr = (x: Frac) => (spoken ? words(x) : str(x));
   if (at.n > at.d) {
     const rest = { n: at.n - at.d, d: at.d };
-    return spoken ? `${capitalize(words(at))} — это одна целая улица и ещё ${words(rest)}: проедь отметку один и ещё ${words(rest)}.`
-      : `${str(at)} = 1 ${str(rest)}: проедь отметку 1 и ещё ${str(rest)}.`;
+    return spoken ? `${capitalize(words(at))} — это одна целая улица до перекрёстка и ещё ${words(rest)} второй улицы.`
+      : `${mixed(at)}: одна целая улица до перекрёстка и ещё ${str(rest)} второй улицы.`;
   }
   const d = lv.ticks || at.d, k = (at.n * d) / at.d;
-  const head = lv.ticks ? `Улица разделена на ${partsWord(d, spoken)}.` : `Раздели улицу в уме на ${partsWord(d, spoken)}.`;
+  const street = lv.length > 1 ? 'Каждая улица' : 'Улица';
+  const head = lv.ticks ? `${street} разделена на ${partsWord(d, spoken)}.` : `Раздели улицу в уме на ${partsWord(d, spoken)}.`;
   return `${head} ${capitalize(fr(at))} — это ${partsWord(k, spoken)} пути от пиццерии.`;
 }
 

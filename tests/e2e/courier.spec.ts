@@ -63,3 +63,22 @@ test('by eye a little off still counts; reaching the end of the street stops the
   expect(await cur(page, 'return s.pos;')).toBe(1);
   await noErrors(errors);
 });
+
+test('long street: the view follows the scooter past the crossroads and glides back to a missed client', async ({ page }) => {
+  const errors = await openGame(page, { met: ALL_HEROES });
+  await begin(page, 3);
+  expect(await cur(page, 'return s.scroll;')).toBe(0);
+  // The giraffe is at 5/4, just past the crossroads: the street has scrolled, the scooter is on screen.
+  await cur(page, 's.go(); s.setPos(1.25); s.stop();');
+  expect(await cur(page, 'return [s.world.x < 0, s.scooter.x + s.world.x > 0 && s.scooter.x + s.world.x < 1920];')).toEqual([true, true]);
+  await cur(page, 's.deliver();');
+  await until(page, 's.next.visible');
+  for (let i = 0; i < 3; i++) await cur(page, 's.nextRound();');
+  await until(page, "s.phase === 'ready'");
+  // Osya lives at 1/2; ride almost to the end: the view glides to her, then back to the scooter.
+  await cur(page, 's.go(); s.setPos(1.9); s.stop(); s.deliver();');
+  expect(await cur(page, 'return s.guide.pillText.text.replace(/\\u00A0/g, " ");')).toContain('Каждая улица разделена на 4 части.');
+  await until(page, "s.phase === 'stopped'");
+  expect(await cur(page, 'return s.scooter.x + s.world.x < 1920;')).toBe(true);
+  await noErrors(errors);
+});
