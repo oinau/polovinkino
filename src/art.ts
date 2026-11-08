@@ -421,6 +421,43 @@ function giraffe(mood: GiraffeMood) {
     ${eyes}${mouth}`);
 }
 
+// ---------- Potion shop: Pip the owlet, a wizard's apprentice ----------
+function pip(mood: Mood) {
+  const eyes = {
+    normal: `<circle cx="62" cy="112" r="17" fill="#fff" ${S} stroke-width="3.5"/><circle cx="98" cy="112" r="17" fill="#fff" ${S} stroke-width="3.5"/>
+             <circle cx="65" cy="114" r="7" fill="${P.navy}"/><circle cx="95" cy="114" r="7" fill="${P.navy}"/>`,
+    happy: `<circle cx="62" cy="112" r="17" fill="#fff" ${S} stroke-width="3.5"/><circle cx="98" cy="112" r="17" fill="#fff" ${S} stroke-width="3.5"/>
+            <path d="M53 115 q9 -10 18 0 M89 115 q9 -10 18 0" fill="none" ${S} stroke-width="4" stroke-linecap="round"/>`,
+    angry: `<circle cx="62" cy="114" r="16" fill="#fff" ${S} stroke-width="3.5"/><circle cx="98" cy="114" r="16" fill="#fff" ${S} stroke-width="3.5"/>
+            <circle cx="65" cy="117" r="6" fill="${P.navy}"/><circle cx="95" cy="117" r="6" fill="${P.navy}"/>
+            <path d="M44 96 L74 104 M116 96 L86 104" ${S} stroke-width="4.5" stroke-linecap="round"/>`,
+  }[mood];
+  const beak = mood === 'happy'
+    ? `<path d="M72 128 L88 128 L80 144 Z" fill="${P.mustard}" ${S} stroke-width="3" stroke-linejoin="round"/>`
+    : `<path d="M73 126 L87 126 L80 140 Z" fill="${P.mustard}" ${S} stroke-width="3" stroke-linejoin="round"/>`;
+  const star = (x: number, y: number, r: number) => {
+    let d = '';
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.45 : r;
+      d += `${i ? 'L' : 'M'}${(x + rr * Math.cos(a)).toFixed(1)} ${(y + rr * Math.sin(a)).toFixed(1)} `;
+    }
+    return `<path d="${d}Z" fill="${P.mustard}"/>`;
+  };
+  return svg([6, 0, 148, 236], `
+    <path d="M62 222 v10 M54 232 h16 M98 222 v10 M90 232 h16" stroke="${P.mustardDark}" stroke-width="6" stroke-linecap="round"/>
+    <ellipse cx="80" cy="168" rx="56" ry="58" fill="${P.sand}" ${S} stroke-width="4"/>
+    <ellipse cx="80" cy="182" rx="34" ry="38" fill="${P.paper}"/>
+    <path d="M66 166 q6 6 12 0 M84 166 q6 6 12 0 M70 184 q6 6 12 0 M88 184 q-6 6 0 0 M74 202 q6 6 12 0" fill="none" stroke="${P.floor}" stroke-width="3" stroke-linecap="round"/>
+    <path d="M26 150 Q8 184 30 206 Q40 180 38 150 Z" fill="${P.terra}" ${S} stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M134 150 Q152 184 130 206 Q120 180 122 150 Z" fill="${P.terra}" ${S} stroke-width="3.5" stroke-linejoin="round"/>
+    <ellipse cx="80" cy="116" rx="50" ry="40" fill="${P.sand}" ${S} stroke-width="4"/>
+    ${eyes}${beak}
+    <path d="M24 92 Q80 70 136 92 L128 82 Q80 64 32 82 Z" fill="${P.navy}" ${S} stroke-width="3" stroke-linejoin="round"/>
+    <path d="M40 84 L92 4 L120 84 Z" fill="${P.navy}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    ${star(76, 52, 10)}${star(98, 30, 7)}${star(96, 70, 6)}
+    <circle cx="92" cy="4" r="6" fill="${P.mustard}" ${S} stroke-width="2.5"/>`);
+}
+
 function clockTower() {
   let ticks = '';
   for (let i = 0; i < 12; i++) {
@@ -458,6 +495,7 @@ export function allArt(): Art[] {
     list.push({ key: `rumb-${m}`, svg: rumb(m), scale: 1.5 });
     list.push({ key: `heron-${m}`, svg: heron(m), scale: 2.2 });
     list.push({ key: `giraffe-${m}`, svg: giraffe(m), scale: 2.4 });
+    list.push({ key: `pip-${m}`, svg: pip(m), scale: 1.8 });
   }
   list.push({ key: 'giraffe-surprised', svg: giraffe('surprised'), scale: 2.4 });
   list.push({ key: 'house-pizza', svg: pizzeriaHouse(), scale: 1.6 });

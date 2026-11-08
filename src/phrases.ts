@@ -1,15 +1,16 @@
 // Every phrase the game can say aloud, generated from the level data, for the voice studio.
-import { CLOCK_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, HEIGHTS, PIER_LEVELS, PIZZA_LEVELS, heightOf } from './levels';
+import { CLOCK_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, HEIGHTS, PIER_LEVELS, PIZZA_LEVELS, POTION_LEVELS, heightOf } from './levels';
 import {
   CLOCK_ASK, CLOCK_FINALE, CLOCK_NOTES, GNOME_NOTES, HEROES, LINES, PIZZA_NOTES, REACTIONS, clockLetter, clockSetExplain,
   clockWaitAsk, clockWaitExplain, DOCTOR_LINES, DOCTOR_NOTES, PATIENTS, doctorExplain, doctorReadAsk, doctorSetAsk, doctorSortAsk,
-  doctorSortExplain, explainDispute, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
+  doctorSortExplain, explainDispute, POTION_GAGS, POTION_LINES, POTION_NOTES, potionAsk, potionDenominatorHint, potionExplain,
+  potionQuestion, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
 } from './lines';
 import { explainTime, timeWords } from './time';
 import { capitalize } from './fractions';
 import { phraseKey } from './voicekey';
 
-export type Speaker = 'narrator' | 'ekibas' | 'osya' | 'borovik' | 'usach' | 'ochkarik' | 'sardina' | 'rumb' | 'heron' | 'giraffe';
+export type Speaker = 'narrator' | 'ekibas' | 'osya' | 'borovik' | 'usach' | 'ochkarik' | 'sardina' | 'rumb' | 'heron' | 'giraffe' | 'pip';
 
 export const SPEAKERS: Record<Speaker, { name: string; color: string; rate: number }> = {
   narrator: { name: 'Ведущий', color: '#2E3A59', rate: 1 },
@@ -22,6 +23,7 @@ export const SPEAKERS: Record<Speaker, { name: string; color: string; rate: numb
   rumb: { name: 'Попугай Румб', color: '#D9734E', rate: 1.35 },
   heron: { name: 'Доктор Цапля', color: '#2E3A59', rate: 1 },
   giraffe: { name: 'Жираф Жорж', color: '#C9973A', rate: 0.9 },
+  pip: { name: 'Совёнок Пип', color: '#D9734E', rate: 1.2 },
 };
 
 export interface Phrase {
@@ -139,6 +141,21 @@ export function allPhrases(): Phrase[] {
   add(DOCTOR_LINES.extend, 'heron', 'Доктор, жираф не влез');
   add(DOCTOR_LINES.stretch, 'giraffe', 'Доктор, жираф вытягивает шею');
   DOCTOR_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Доктор, итог'));
+
+  POTION_LEVELS.forEach((lv, i) => {
+    const where = `Зельеварня, уровень ${i + 1}`;
+    add(lv.intro, 'narrator', `${where}, вступление`);
+    for (const r of lv.rounds) {
+      add(potionAsk(r), 'pip', `${where}, рецепт`);
+      add(potionQuestion(r), 'narrator', `${where}, вопрос`);
+      add(potionExplain(r, true), 'narrator', `${where}, ошибка`);
+      add(`Верно! ${potionExplain(r, true)}`, 'narrator', `${where}, верно`);
+      add(potionDenominatorHint(r.d), 'narrator', `${where}, сложили знаменатели`);
+    }
+  });
+  for (const line of Object.values(POTION_LINES)) add(line, 'pip', 'Зельеварня');
+  for (const g of POTION_GAGS) add(g.line, 'narrator', 'Зельеварня, превращение');
+  POTION_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Зельеварня, итог'));
 
   return list;
 }

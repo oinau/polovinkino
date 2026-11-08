@@ -328,3 +328,78 @@ export const DOCTOR_LEVELS: DoctorLevel[] = [
 ];
 
 export const heightOf = (r: { who: PatientId; h?: Frac }) => r.h ?? HEIGHTS[r.who];
+
+// ---------- potion shop: adding fractions with the same denominator ----------
+export type IngredientId = 'frog' | 'moon' | 'pepper' | 'honey';
+export const INGREDIENTS: IngredientId[] = ['frog', 'moon', 'pepper', 'honey'];
+
+export type PotionRound =
+  /** Pour each ingredient by the recipe (in 1/d portions), brew, then say how much potion there is. */
+  | { kind: 'brew'; d: number; recipe: [IngredientId, number][] }
+  /** The flask already holds `start`; top it up with `add` to `target`/d, then say how much was added. */
+  | { kind: 'top'; d: number; start: [IngredientId, number][]; add: IngredientId; target: number };
+
+export interface PotionLevel {
+  name: string;
+  intro: string;
+  /** Recipe lines get a tick when poured right, and the flask shows its divisions as fractions. */
+  guide: boolean;
+  rounds: PotionRound[];
+}
+
+const brew = (d: number, ...recipe: [IngredientId, number][]): PotionRound => ({ kind: 'brew', d, recipe });
+
+export const POTION_LEVELS: PotionLevel[] = [
+  {
+    name: 'Четвёртые',
+    intro: 'Совёнок Пип учится варить зелья. Колба разделена на четыре части. Нажми на бутылку — нальётся одна часть. Налей всё по рецепту и нажми «Варить!».',
+    guide: true,
+    rounds: [brew(4, ['frog', 1], ['moon', 2]), brew(4, ['pepper', 2], ['honey', 1]), brew(4, ['moon', 1], ['frog', 1]), brew(4, ['honey', 1], ['pepper', 1], ['frog', 1])],
+  },
+  {
+    name: 'Шестые',
+    intro: 'Новая колба разделена на шесть частей. Рецепты сложнее!',
+    guide: false,
+    rounds: [brew(6, ['moon', 1], ['frog', 2]), brew(6, ['honey', 2], ['pepper', 3]), brew(6, ['frog', 3], ['moon', 1], ['honey', 1]), brew(6, ['pepper', 1], ['moon', 4])],
+  },
+  {
+    name: 'Полная колба',
+    intro: 'Эти зелья варятся в полной колбе. Сколько это — полная колба?',
+    guide: false,
+    rounds: [brew(4, ['frog', 1], ['honey', 3]), brew(4, ['moon', 2], ['pepper', 2]), brew(6, ['honey', 2], ['frog', 3], ['moon', 1]), brew(6, ['pepper', 3], ['moon', 3])],
+  },
+  {
+    name: 'Сколько долить?',
+    intro: 'В колбе уже что-то налито. Долей нужное, чтобы зелья стало сколько нужно.',
+    guide: false,
+    rounds: [
+      { kind: 'top', d: 6, start: [['moon', 2]], add: 'honey', target: 5 },
+      { kind: 'top', d: 4, start: [['frog', 1]], add: 'pepper', target: 4 },
+      { kind: 'top', d: 6, start: [['frog', 1], ['honey', 2]], add: 'moon', target: 5 },
+      { kind: 'top', d: 4, start: [['pepper', 2]], add: 'frog', target: 3 },
+    ],
+  },
+];
+
+/** Parts in the flask at the start, and the right answer in parts of d. */
+export function potionNumbers(r: PotionRound) {
+  if (r.kind === 'brew') return { start: 0, total: r.recipe.reduce((a, [, n]) => a + n, 0), answer: r.recipe.reduce((a, [, n]) => a + n, 0) };
+  const start = r.start.reduce((a, [, n]) => a + n, 0);
+  return { start, total: r.target, answer: r.target - start };
+}
+
+/**
+ * Three options for «how much»: the right one, the classic mistake of adding the denominators too
+ * (1/4 + 2/4 = 3/8), and one part more or less.
+ */
+export function potionOptions(r: PotionRound): Frac[] {
+  const { answer, total } = potionNumbers(r);
+  const parts = r.kind === 'brew' ? r.recipe.length : r.start.length + 1;
+  const right = f(answer, r.d);
+  const sumDen = f(r.kind === 'brew' ? answer : total, r.d * parts);
+  // Brewing: one part less (or more); topping up: forgetting what was already in the flask.
+  const offs = r.kind === 'brew' ? [answer - 1, answer + 1] : [total, answer + 1];
+  const same = (a: Frac, b: Frac) => a.n * b.d === b.n * a.d;
+  const n = offs.find(k => k > 0 && !same(f(k, r.d), right) && !same(f(k, r.d), sumDen))!;
+  return [right, sumDen, f(n, r.d)];
+}

@@ -1,7 +1,7 @@
 // Everything the characters say. Kept apart from the scenes so the voice studio
 // can list every spoken phrase for recording.
 import type { CustomerId } from './art';
-import { HEIGHTS, pierNumbers, type CrewId, type Dispute, type PatientId, type PierRound } from './levels';
+import { HEIGHTS, pierNumbers, potionNumbers, type CrewId, type Dispute, type IngredientId, type PatientId, type PierRound, type PotionRound } from './levels';
 import { capitalize, compare, str, words, type Frac } from './fractions';
 import { hourPart, meetWords, minuteMark, minutesWords, timeWords } from './time';
 
@@ -117,7 +117,7 @@ export function explainDispute(d: Dispute, spoken = false) {
 export const VOICE_SAMPLE = 'Привет! Я буду читать заказы. Мне две третьих пиццы!';
 
 // ---------- heroes: name tags and the one-time introduction card ----------
-export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka' | 'pier' | 'heron' | 'giraffe';
+export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka' | 'pier' | 'heron' | 'giraffe' | 'pip';
 
 export const HEROES: Record<HeroId, { name: string; tag: string; textures: string[]; intro: string }> = {
   pyh: {
@@ -155,6 +155,10 @@ export const HEROES: Record<HeroId, { name: string; tag: string; textures: strin
   giraffe: {
     name: 'Жираф Жорж', tag: 'Жорж', textures: ['giraffe-happy'],
     intro: 'Это жираф Жорж. Он приехал в Половинкино недавно и ещё не знает, что он самый высокий в городе.',
+  },
+  pip: {
+    name: 'Совёнок Пип', tag: 'Пип', textures: ['pip-happy'],
+    intro: 'Это совёнок Пип, ученик волшебника. Колпак ему пока велик, а зелья иногда взрываются. Помоги ему варить точно по рецепту!',
   },
   gnomes: {
     name: 'Усач и Очкарик', tag: '', textures: ['usach-happy', 'ochkarik-happy'],
@@ -302,3 +306,81 @@ export const DOCTOR_LINES = {
   same: (who: PatientId) => `Ростом как ${PATIENTS[who].name}!`,
 };
 export const DOCTOR_NOTES = ['', 'Все измерены! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Доктор Цапля довольна.', 'Ни одной ошибки! Самый точный ростомер в городе!'];
+
+// ---------- potion shop ----------
+export const INGREDIENT: Record<IngredientId, { name: string; gen: string }> = {
+  frog: { name: 'Лягушачий сок', gen: 'лягушачьего сока' },
+  moon: { name: 'Лунная роса', gen: 'лунной росы' },
+  pepper: { name: 'Драконий перец', gen: 'драконьего перца' },
+  honey: { name: 'Мёд', gen: 'мёда' },
+};
+/** «части остались четвёртыми» */
+const PARTS_INSTR: Record<number, string> = { 2: 'половинками', 3: 'третьими', 4: 'четвёртыми', 6: 'шестыми' };
+
+/** n/d in words; a full flask is «четыре четвёртых», not «целая». */
+const amount = (n: number, d: number) => (n === d ? WHOLE_WORDS[d] : words({ n, d }));
+const listWords = (items: string[]) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} и ${items.at(-1)}`);
+const portions = (items: [IngredientId, number][], d: number) => listWords(items.map(([id, n]) => `${amount(n, d)} ${INGREDIENT[id].gen}`));
+
+/** What Pip reads out from the recipe. */
+export function potionAsk(r: PotionRound): string {
+  if (r.kind === 'brew') return `Рецепт: ${portions(r.recipe, r.d)}.`;
+  return `Нужно ${amount(r.target, r.d)} зелья. В колбе уже ${portions(r.start, r.d)}. Долей ${INGREDIENT[r.add].gen}!`;
+}
+
+export const potionQuestion = (r: PotionRound) => (r.kind === 'brew' ? 'Сколько зелья в колбе?' : `Сколько ${INGREDIENT[r.add].gen} долили?`);
+
+/** Why the amount is what it is. */
+export function potionExplain(r: PotionRound, spoken = false): string {
+  const { start, total, answer } = potionNumbers(r);
+  const d = r.d;
+  if (r.kind === 'top') {
+    return spoken ? `Нужно ${amount(total, d)}, было ${amount(start, d)}. Долили ${amount(answer, d)}.`
+      : `${total}/${d} − ${start}/${d} = ${answer}/${d}.`;
+  }
+  const full = total === d;
+  if (spoken) {
+    const sum = r.recipe.map(([, n]) => amount(n, d)).join(' плюс ');
+    return `${capitalize(sum)} — это ${amount(total, d)}.${full ? ' Одна целая — полная колба!' : ''} Числители складываем, знаменатель не меняется.`;
+  }
+  return `${r.recipe.map(([, n]) => `${n}/${d}`).join(' + ')} = ${total}/${d}${full ? ' = 1, полная колба!' : '.'} Числители складываем, знаменатель не меняется.`;
+}
+
+/** The classic mistake: adding the denominators too. */
+export const potionDenominatorHint = (d: number) => `Знаменатели не складывают: части остались ${PARTS_INSTR[d] ?? d}.`;
+
+/** What was poured wrong, for the first ingredient that is off. */
+export function potionPourExplain(r: PotionRound, poured: Partial<Record<IngredientId, number>>, spoken = false): string {
+  const d = r.d;
+  const fr = (n: number) => (spoken ? amount(n, d) : `${n}/${d}`);
+  const frAcc = (n: number) => (spoken ? (n === d ? WHOLE_WORDS[d] : words({ n, d }, 'acc')) : `${n}/${d}`);
+  if (r.kind === 'top') {
+    const now = Object.values(poured).reduce((a, b) => a + (b ?? 0), 0);
+    return `Нужно ${fr(r.target)}, а в колбе ${fr(now)}.`;
+  }
+  const need = new Map(r.recipe);
+  for (const [id, n] of Object.entries(poured) as [IngredientId, number][]) {
+    if (n && !need.has(id)) return `${capitalize(INGREDIENT[id].gen)} в рецепте нет!`;
+  }
+  for (const [id, n] of r.recipe) {
+    const got = poured[id] ?? 0;
+    if (got !== n) return `${capitalize(INGREDIENT[id].gen)} нужно налить ${frAcc(n)}, а ${got ? `налито ${fr(got)}` : 'в колбе ни капли'}.`;
+  }
+  return '';
+}
+
+export const POTION_LINES = {
+  boom: 'Бабах! Больше полной колбы не нальёшь.',
+  fizzle: 'Пф-ф! Зелье не получилось.',
+  brewing: 'Буль-буль… Зелье готово!',
+};
+
+/** What the right potion does to Pip; one per round, in turn. */
+export const POTION_GAGS: { line: string; effect: 'green' | 'tiny' | 'float' | 'giant' | 'spin' }[] = [
+  { line: 'Ой! Пип позеленел, как лягушка! Ква!', effect: 'green' },
+  { line: 'Ой! Пип стал крошечным!', effect: 'tiny' },
+  { line: 'Ой! Пип взлетел под потолок!', effect: 'float' },
+  { line: 'Ой! Пип вырос до самого потолка!', effect: 'giant' },
+  { line: 'Ой! Пип закружился волчком!', effect: 'spin' },
+];
+export const POTION_NOTES = ['', 'Зелья сварены! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Волшебник доволен.', 'Ни одной ошибки! Пип — лучший ученик волшебника!'];

@@ -11,6 +11,7 @@ import { Gnomes } from './scenes/Gnomes';
 import { Clock } from './scenes/Clock';
 import { Pier } from './scenes/Pier';
 import { Doctor } from './scenes/Doctor';
+import { Potion } from './scenes/Potion';
 
 async function start() {
   // Canvas text needs the font (with Cyrillic glyphs) ready before the first draw.
@@ -29,7 +30,7 @@ async function start() {
       width: W,
       height: H,
     },
-    scene: [Boot, Town, Pizzeria, Gnomes, Clock, Pier, Doctor],
+    scene: [Boot, Town, Pizzeria, Gnomes, Clock, Pier, Doctor, Potion],
   });
   if (import.meta.env.DEV) Object.assign(window, { __game: game });
 }
