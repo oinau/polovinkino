@@ -43,7 +43,7 @@ test('riding past the client: he calls out, the spot is flagged, and you can rid
   // Osya lives at 1/2: stop at 3/4.
   await cur(page, 's.go(); s.setPos(0.75); s.stop(); s.deliver();');
   expect(await cur(page, 'return [s.mistakes, !!s.flag, s.bubble.list.some(o => o.text === "Эй, я здесь! Ты проехал!")];')).toEqual([1, true, true]);
-  expect(await cur(page, 'return s.guide.pillText.text.replace(/\\u00A0/g, " ");')).toContain('1/2 — это 2 части от пиццерии.');
+  expect(await cur(page, 'return s.guide.pillText.text.replace(/\\u00A0/g, " ");')).toContain('1/2 — это 2 части пути от пиццерии.');
   await cur(page, 'for (let i = 0; i < 12; i++) s.nudge(-1); s.deliver();');
   await until(page, 's.next.visible');
   expect(await cur(page, 'return s.coins;')).toBe(1);

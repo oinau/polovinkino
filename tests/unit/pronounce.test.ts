@@ -11,6 +11,11 @@ describe('speech dictionary', () => {
     expect(forSpeech('Мне две третьих пиццы! Пиццерия «Кусочек».', 'none')).toBe('Мне две третьих пицы! Пицерия «Кусочек».');
   });
 
+  it('says «Ммм» as a sound, not letter by letter', () => {
+    expect(forSpeech('Ммм, бабушкин торт!', 'none')).toBe('Ээм, бабушкин торт!');
+    expect(forSpeech('Мама', 'none')).toBe('Мама');
+  });
+
   it('marks stress only when asked, on whole words, in any case at the start', () => {
     expect(forSpeech('Это Екибас и Цапля.', 'none')).toBe('Это Екибас и Цапля.');
     expect(forSpeech('Это Екибас и Цапля.', 'acute')).toBe(`Это Екиба${ACUTE}с и Ца${ACUTE}пля.`);

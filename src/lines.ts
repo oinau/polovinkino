@@ -526,7 +526,7 @@ export function courierExplain(lv: CourierLevel, at: Frac, spoken = false): stri
   }
   const d = lv.ticks || at.d, k = (at.n * d) / at.d;
   const head = lv.ticks ? `Улица разделена на ${partsWord(d, spoken)}.` : `Раздели улицу в уме на ${partsWord(d, spoken)}.`;
-  return `${head} ${capitalize(fr(at))} — это ${partsWord(k, spoken)} от пиццерии.`;
+  return `${head} ${capitalize(fr(at))} — это ${partsWord(k, spoken)} пути от пиццерии.`;
 }
 
 export const COURIER_LINES = {

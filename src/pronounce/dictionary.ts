@@ -15,6 +15,8 @@ export const ACUTE = '́';
 const RESPELL: [RegExp, string][] = [
   [/пицц/g, 'пиц'],
   [/Пицц/g, 'Пиц'],
+  // Voices spell «Ммм» out letter by letter («эм-эм-эм»).
+  [/(?<![а-яёА-ЯЁ])Мм+(?![а-яёА-ЯЁ])/g, 'Ээм'],
 ];
 
 /** Word forms with «'» after the stressed vowel. Capitalized forms are matched too. */
