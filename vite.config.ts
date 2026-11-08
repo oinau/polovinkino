@@ -9,7 +9,7 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 2000,
     rolldownOptions: {
-      input: { main: 'index.html', studio: 'studio.html' },
+      input: { main: 'index.html', studio: 'studio.html', pronounce: 'pronounce.html' },
     },
   },
 });

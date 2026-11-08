@@ -16,3 +16,13 @@ for (const [key, levels] of [['Pizzeria', 5], ['Gnomes', 3], ['Clock', 3], ['Pie
     });
   }
 }
+
+test('pronunciation page lists the samples', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', e => errors.push(String(e)));
+  await page.goto('/pronounce.html');
+  await page.waitForSelector('#rows tr');
+  const { SAMPLES } = await page.evaluate(() => import(/* @vite-ignore */ '/src/pronounce/samples.ts'));
+  await page.waitForFunction(n => document.querySelectorAll('#rows tr').length === n, SAMPLES.length);
+  await noErrors(errors);
+});

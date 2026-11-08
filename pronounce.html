@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Половинкино — проверка произношения</title>
+  <style>
+    :root { --cream: #F3E9D2; --paper: #FFF8EC; --navy: #2E3A59; --terra: #D9734E; --olive: #8A9A5B; --sand: #E7D3A8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 16px 24px 40px; background: var(--cream); color: var(--navy); font-family: Nunito, sans-serif; font-weight: 700; }
+    h1 { margin: 0 0 8px; font-size: 26px; font-weight: 900; }
+    p, .note { font-size: 15px; font-weight: 600; max-width: 900px; }
+    button, select, input { font: inherit; color: var(--navy); }
+    button { font-weight: 900; background: var(--paper); border: 3px solid var(--navy); border-radius: 12px; padding: 6px 12px; cursor: pointer; box-shadow: 0 3px 0 var(--navy); }
+    button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--navy); }
+    button.playing { background: var(--olive); color: var(--paper); }
+    select, input[type=text] { border: 3px solid var(--navy); border-radius: 12px; padding: 6px 10px; background: var(--paper); }
+    .bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 12px 0; }
+    table { border-collapse: collapse; background: var(--paper); border: 3px solid var(--navy); border-radius: 16px; overflow: hidden; }
+    th, td { padding: 8px 12px; border-bottom: 2px solid var(--sand); text-align: left; vertical-align: middle; }
+    th { background: var(--sand); font-weight: 900; }
+    td.v button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 150px; }
+    td.v small { font-weight: 700; font-size: 16px; text-transform: none; }
+    .info { font-size: 13px; font-weight: 600; opacity: .75; word-break: break-all; }
+    #custom { width: min(700px, 100%); }
+  </style>
+</head>
+<body>
+  <h1>Проверка произношения</h1>
+  <p>
+    Каждое слово можно послушать по-разному: как есть, со знаком ударения (U+0301), с ударной
+    гласной заглавной буквой и переписанным «как слышится». Послушайте на каждом устройстве,
+    где играет ребёнок, и отметьте, какой вариант звучит лучше и где голос запинается.
+    Под кнопкой — ровно то, что уходит в синтезатор.
+  </p>
+  <div class="bar">
+    <label>Голос: <select id="voice"></select></label>
+    <button id="stop">■ Стоп</button>
+  </div>
+  <div class="info" id="info"></div>
+  <div class="bar">
+    <input type="text" id="custom" value="Мне две третьих пиццы!">
+    <button id="accent" title="Поставить знак ударения после буквы перед курсором">+ знак ударения</button>
+    <button id="say">▶ Сказать</button>
+  </div>
+  <table>
+    <thead><tr><th>Слово</th><th>Как есть</th><th>Знак ударения</th><th>Заглавная гласная</th><th>Переписано</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <script type="module" src="/src/pronounce/main.ts"></script>
+</body>
+</html>
