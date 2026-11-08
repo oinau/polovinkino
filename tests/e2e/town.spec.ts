@@ -69,7 +69,7 @@ test('back from a place, the map rides on to the next one', async ({ page }) => 
 });
 
 test('the monster house on the mountain opens its rooms; when the road is done the arrow points there', async ({ page }) => {
-  const all = { pizza: [1, 1, 1, 1, 1], gnomes: [1, 1, 1], clock: [1, 1, 1], pier: [1, 1, 1], beaver: [1, 1, 1, 1], doctor: [1, 1, 1, 1], potion: [1, 1, 1, 1] };
+  const all = { pizza: [1, 1, 1, 1, 1], gnomes: [1, 1, 1], clock: [1, 1, 1], pier: [1, 1, 1], beaver: [1, 1, 1, 1], doctor: [1, 1, 1, 1], potion: [1, 1, 1, 1], courier: [1, 1, 1, 1] };
   const errors = await openGame(page, { stars: all });
   expect(await scroll(page)).toBe(5800 - 1920);
   await page.evaluate(() => (window as any).__game.scene.getScene('Town').openMonsters());

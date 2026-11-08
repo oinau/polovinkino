@@ -550,3 +550,56 @@ export const BEAVER_LEVELS: BeaverLevel[] = [
     ],
   },
 ];
+
+// ---------- couriers: a point on the number line ----------
+export type CourierClient = 'osya' | 'borovik' | 'tikhon' | 'nosochka' | 'usach' | 'sardina' | 'giraffe' | 'pip';
+
+export interface CourierRound {
+  who: CourierClient;
+  /** Where the client lives, from the pizzeria (0) along the street. */
+  at: Frac;
+}
+
+export interface CourierLevel {
+  name: string;
+  intro: string;
+  /** Street length in «streets»: 1, or 2 for the long one. */
+  length: number;
+  /** Divisions per one street, with a house on each; 0 = no marks and no houses, judge by eye. */
+  ticks: number;
+  rounds: CourierRound[];
+}
+
+export const COURIER_LEVELS: CourierLevel[] = [
+  {
+    name: 'Четверти',
+    intro: 'Ёжик Шустрик развозит пиццу на самокате. Улица от пиццерии до конца — одна целая, она разделена на равные части. Нажми «Поехали», потом «Стоп!» у нужного дома. Стрелками можно подъехать точнее.',
+    length: 1,
+    ticks: 4,
+    rounds: [{ who: 'osya', at: f(1, 2) }, { who: 'borovik', at: f(3, 4) }, { who: 'tikhon', at: f(1, 4) }, { who: 'nosochka', at: f(2, 4) }],
+  },
+  {
+    name: 'Шестые',
+    intro: 'Теперь улица разделена на шесть частей, и домов больше.',
+    length: 1,
+    ticks: 6,
+    rounds: [{ who: 'usach', at: f(1, 3) }, { who: 'sardina', at: f(5, 6) }, { who: 'pip', at: f(1, 6) }, { who: 'osya', at: f(4, 6) }],
+  },
+  {
+    name: 'На глаз',
+    intro: 'Делений на улице нет, домов тоже — клиенты ждут прямо на тротуаре. Останавливайся на глаз!',
+    length: 1,
+    ticks: 0,
+    rounds: [{ who: 'borovik', at: f(1, 2) }, { who: 'tikhon', at: f(1, 4) }, { who: 'nosochka', at: f(3, 4) }, { who: 'usach', at: f(2, 3) }],
+  },
+  {
+    name: 'Длинная улица',
+    intro: 'Улицу продлили! Теперь до конца — две целых улицы. Некоторые клиенты живут дальше первой целой.',
+    length: 2,
+    ticks: 4,
+    rounds: [{ who: 'giraffe', at: f(5, 4) }, { who: 'pip', at: f(3, 2) }, { who: 'sardina', at: f(7, 4) }, { who: 'osya', at: f(1, 2) }],
+  },
+];
+
+/** How close to the client counts as «there», in streets: exact on marks, generous by eye. */
+export const courierTolerance = (lv: CourierLevel) => (lv.ticks ? 1 / 48 + 1e-9 : 1 / 12 + 1e-9);

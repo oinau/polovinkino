@@ -26,7 +26,7 @@ export const SPOTS: Spot[] = [
   { key: 'house-beaver', x: 2960, y: 870, name: 'Мост бобра Бруно', place: 'beaver', scale: 0.92 },
   { key: 'house-doctor', x: 3620, y: 800, name: 'Кабинет доктора', place: 'doctor', scale: 1.3 },
   { key: 'house-potion', x: 4240, y: 760, name: 'Зельеварня', place: 'potion', scale: 1.3 },
-  { key: 'house-courier', x: 4860, y: 830, name: 'Курьеры', scale: 1.3 },
+  { key: 'house-courier', x: 4860, y: 830, name: 'Курьеры', place: 'courier', scale: 1.3 },
 ];
 
 /** The road ends at the foot of the monster mountain. */

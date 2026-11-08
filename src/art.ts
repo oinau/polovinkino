@@ -582,6 +582,35 @@ function beaverLodge() {
     <circle cx="168" cy="72" r="8" fill="${P.olive}" ${S} stroke-width="3"/>`);
 }
 
+// ---------- Couriers: Shustrik the hedgehog on a scooter ----------
+function shustrik(mood: Mood) {
+  let spikes = '';
+  for (let i = 0; i < 8; i++) {
+    const a = Math.PI * (0.55 + i * 0.12), r1 = 50, r2 = 74;
+    const x1 = 96 + Math.cos(a) * r1, y1 = 92 + Math.sin(a) * r1 * -1;
+    spikes += `<path d="M${(x1 - 8).toFixed(1)} ${y1.toFixed(1)} L${(96 + Math.cos(a) * r2).toFixed(1)} ${(92 - Math.sin(a) * r2).toFixed(1)} L${(x1 + 8).toFixed(1)} ${(y1 + 6).toFixed(1)} Z" fill="${P.floor}" ${S} stroke-width="3" stroke-linejoin="round"/>`;
+  }
+  const eye = { normal: `<circle cx="126" cy="80" r="5" fill="${P.navy}"/>`, happy: `<path d="M120 82 q6 -8 12 0" fill="none" ${S} stroke-width="3.5" stroke-linecap="round"/>`,
+    angry: `<circle cx="126" cy="82" r="5" fill="${P.navy}"/><path d="M116 70 L134 74" ${S} stroke-width="4" stroke-linecap="round"/>` }[mood];
+  const mouth = mood === 'angry' ? `<path d="M128 104 q8 -5 16 0" fill="none" ${S} stroke-width="3" stroke-linecap="round"/>`
+    : `<path d="M128 100 q8 ${mood === 'happy' ? 10 : 6} 16 0" fill="none" ${S} stroke-width="3" stroke-linecap="round"/>`;
+  return svg([0, 0, 200, 210], `
+    <path d="M30 186 H160 L176 120" fill="none" ${S} stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M166 116 H190" ${S} stroke-width="8" stroke-linecap="round"/>
+    <circle cx="44" cy="190" r="16" fill="${P.paper}" ${S} stroke-width="5"/><circle cx="154" cy="190" r="16" fill="${P.paper}" ${S} stroke-width="5"/>
+    <rect x="20" y="64" width="54" height="40" rx="4" fill="${P.mustard}" ${S} stroke-width="3.5"/>
+    <path d="M20 78 H74 M47 64 V78" ${S} stroke-width="3"/>
+    ${spikes}
+    <ellipse cx="96" cy="120" rx="46" ry="48" fill="${P.floor}" ${S} stroke-width="4"/>
+    <ellipse cx="104" cy="132" rx="28" ry="32" fill="${P.paper}"/>
+    <path d="M110 66 Q150 66 156 98 Q150 112 128 112 Q110 108 104 90 Z" fill="${P.sand}" ${S} stroke-width="3.5" stroke-linejoin="round"/>
+    <circle cx="158" cy="98" r="6" fill="${P.navy}"/>
+    ${eye}${mouth}
+    <path d="M90 74 Q112 40 142 62 L138 72 Q114 58 98 80 Z" fill="${P.terra}" ${S} stroke-width="3" stroke-linejoin="round"/>
+    <path d="M70 160 L66 186 M112 160 L120 186" ${S} stroke-width="7" stroke-linecap="round"/>
+    <path d="M128 128 L170 118" ${S} stroke-width="6" stroke-linecap="round"/>`);
+}
+
 function clockTower() {
   let ticks = '';
   for (let i = 0; i < 12; i++) {
@@ -626,6 +655,7 @@ export function allArt(): Art[] {
     list.push({ key: `spider-${m}`, svg: spider(m), scale: 2 });
     list.push({ key: `bat-${m}`, svg: bat(m), scale: 2 });
     list.push({ key: `bruno-${m}`, svg: bruno(m), scale: 1.8 });
+    list.push({ key: `shustrik-${m}`, svg: shustrik(m), scale: 1.8 });
   }
   list.push({ key: 'giraffe-surprised', svg: giraffe('surprised'), scale: 2.4 });
   list.push({ key: 'house-pizza', svg: pizzeriaHouse(), scale: 1.6 });

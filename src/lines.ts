@@ -1,7 +1,7 @@
 // Everything the characters say. Kept apart from the scenes so the voice studio
 // can list every spoken phrase for recording.
 import type { CustomerId } from './art';
-import { HEIGHTS, monsterAnswer, pierNumbers, potionNumbers, type CrewId, type MonsterId, type MonsterRound, type Dispute, type IngredientId, type PatientId, type PierRound, type PotionRound } from './levels';
+import { HEIGHTS, monsterAnswer, type CourierClient, type CourierLevel, pierNumbers, potionNumbers, type CrewId, type MonsterId, type MonsterRound, type Dispute, type IngredientId, type PatientId, type PierRound, type PotionRound } from './levels';
 import { capitalize, compare, gcd, str, words, type Frac } from './fractions';
 import { digital, hourPart, meetWords, minuteMark, minutesWords, timeWords } from './time';
 
@@ -117,7 +117,7 @@ export function explainDispute(d: Dispute, spoken = false) {
 export const VOICE_SAMPLE = 'Привет! Я буду читать заказы. Мне две третьих пиццы!';
 
 // ---------- heroes: name tags and the one-time introduction card ----------
-export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka' | 'pier' | 'heron' | 'giraffe' | 'pip' | 'monsters' | 'bruno';
+export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka' | 'pier' | 'heron' | 'giraffe' | 'pip' | 'monsters' | 'bruno' | 'shustrik';
 
 export const HEROES: Record<HeroId, { name: string; tag: string; textures: string[]; intro: string }> = {
   pyh: {
@@ -159,6 +159,10 @@ export const HEROES: Record<HeroId, { name: string; tag: string; textures: strin
   pip: {
     name: 'Совёнок Пип', tag: 'Пип', textures: ['pip-happy'],
     intro: 'Это совёнок Пип, ученик волшебника. Колпак ему пока велик, а зелья иногда взрываются. Помоги ему варить точно по рецепту!',
+  },
+  shustrik: {
+    name: 'Ёжик Шустрик', tag: 'Шустрик', textures: ['shustrik-happy'],
+    intro: 'Это ёжик Шустрик, самый быстрый курьер Половинкино. Он развозит пиццу на самокате, но иногда проезжает мимо нужного дома. Помоги ему!',
   },
   bruno: {
     name: 'Бобр Бруно', tag: 'Бруно', textures: ['bruno-happy'],
@@ -503,3 +507,32 @@ export const BEAVER_LINES = {
   cross: 'Можно идти к доктору!',
 };
 export const BEAVER_NOTES = ['', 'Мост починен! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Бруно доволен.', 'Ни одной ошибки! Бруно берёт тебя в помощники!'];
+
+// ---------- couriers ----------
+export const CLIENTS: Record<CourierClient, string> = {
+  osya: 'Ося', borovik: 'Дед Боровик', tikhon: 'Тихон', nosochka: 'Носочка', usach: 'Гном Усач', sardina: 'Капитан Сардина', giraffe: 'Жираф Жорж', pip: 'Совёнок Пип',
+};
+
+/** Names stay in the nominative: no stress to misplace. */
+export const courierAsk = (who: CourierClient, at: Frac) => `${CLIENTS[who]} ждёт пиццу. Дом — ${words(at)} пути от пиццерии.`;
+
+/** Where the client really is, counted on the street. */
+export function courierExplain(lv: CourierLevel, at: Frac, spoken = false): string {
+  const fr = (x: Frac) => (spoken ? words(x) : str(x));
+  if (at.n > at.d) {
+    const rest = { n: at.n - at.d, d: at.d };
+    return spoken ? `${capitalize(words(at))} — это одна целая улица и ещё ${words(rest)}: проедь отметку один и ещё ${words(rest)}.`
+      : `${str(at)} = 1 ${str(rest)}: проедь отметку 1 и ещё ${str(rest)}.`;
+  }
+  const d = lv.ticks || at.d, k = (at.n * d) / at.d;
+  const head = lv.ticks ? `Улица разделена на ${partsWord(d, spoken)}.` : `Раздели улицу в уме на ${partsWord(d, spoken)}.`;
+  return `${head} ${capitalize(fr(at))} — это ${partsWord(k, spoken)} от пиццерии.`;
+}
+
+export const COURIER_LINES = {
+  far: 'Эй, я здесь! Ты проехал!',
+  near: 'Ещё не доехал! Я дальше!',
+  end: 'Конец улицы!',
+  thanks: 'Спасибо! Горячая пицца!',
+};
+export const COURIER_NOTES = ['', 'Все пиццы доставлены! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Клиенты довольны.', 'Ни одной ошибки! Шустрик — лучший курьер!'];

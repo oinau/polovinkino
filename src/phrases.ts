@@ -1,17 +1,17 @@
 // Every phrase the game can say aloud, generated from the level data, for the voice studio.
-import { BEAVER_LEVELS, CLOCK_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, HEIGHTS, MONSTER_LEVELS, PIER_LEVELS, PIZZA_LEVELS, POTION_LEVELS, heightOf } from './levels';
+import { BEAVER_LEVELS, CLOCK_LEVELS, COURIER_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, HEIGHTS, MONSTER_LEVELS, PIER_LEVELS, PIZZA_LEVELS, POTION_LEVELS, heightOf } from './levels';
 import {
   CLOCK_ASK, CLOCK_FINALE, CLOCK_NOTES, GNOME_NOTES, HEROES, LINES, PIZZA_NOTES, REACTIONS, clockLetter, clockSetExplain,
   clockWaitAsk, clockWaitExplain, DOCTOR_LINES, DOCTOR_NOTES, PATIENTS, doctorExplain, doctorReadAsk, doctorSetAsk, doctorSortAsk,
   doctorSortExplain, explainDispute, POTION_GAGS, POTION_LINES, POTION_NOTES, potionAsk, potionDenominatorHint, potionExplain,
-  potionQuestion, BEAVER_LINES, BEAVER_NOTES, beaverAsk, DIPLOMA, MONSTER_LINES, MONSTER_NOTES, monsterAsk, monsterExplain, monsterQuestion, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
+  potionQuestion, COURIER_LINES, COURIER_NOTES, courierAsk, courierExplain, BEAVER_LINES, BEAVER_NOTES, beaverAsk, DIPLOMA, MONSTER_LINES, MONSTER_NOTES, monsterAsk, monsterExplain, monsterQuestion, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
 } from './lines';
 import { explainTime, timeWords } from './time';
 import { capitalize } from './fractions';
 import { phraseKey } from './voicekey';
 
 export type Speaker = 'narrator' | 'ekibas' | 'osya' | 'borovik' | 'usach' | 'ochkarik' | 'sardina' | 'rumb' | 'heron' | 'giraffe' | 'pip'
-  | 'mummy' | 'wolf' | 'slime' | 'spider' | 'bat' | 'bruno';
+  | 'mummy' | 'wolf' | 'slime' | 'spider' | 'bat' | 'bruno' | 'shustrik';
 
 export const SPEAKERS: Record<Speaker, { name: string; color: string; rate: number }> = {
   narrator: { name: 'Ведущий', color: '#2E3A59', rate: 1 },
@@ -31,6 +31,7 @@ export const SPEAKERS: Record<Speaker, { name: string; color: string; rate: numb
   spider: { name: 'Паук', color: '#2E3A59', rate: 1.1 },
   bat: { name: 'Летучая мышь', color: '#2E3A59', rate: 1.35 },
   bruno: { name: 'Бобр Бруно', color: '#C9973A', rate: 0.95 },
+  shustrik: { name: 'Ёжик Шустрик', color: '#D9734E', rate: 1.25 },
 };
 
 export interface Phrase {
@@ -193,6 +194,18 @@ export function allPhrases(): Phrase[] {
   });
   for (const line of Object.values(BEAVER_LINES)) add(line, 'bruno', 'Мост бобра');
   BEAVER_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Мост бобра, итог'));
+
+  COURIER_LEVELS.forEach((lv, i) => {
+    const where = `Курьеры, уровень ${i + 1}`;
+    add(lv.intro, 'narrator', `${where}, вступление`);
+    for (const r of lv.rounds) {
+      add(courierAsk(r.who, r.at), 'narrator', `${where}, заказ`);
+      add(courierExplain(lv, r.at, true), 'narrator', `${where}, ошибка`);
+      add(`Верно! ${courierExplain(lv, r.at, true)}`, 'narrator', `${where}, верно`);
+    }
+  });
+  for (const line of Object.values(COURIER_LINES)) add(line, 'narrator', 'Курьеры, клиент');
+  COURIER_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Курьеры, итог'));
 
   return list;
 }
