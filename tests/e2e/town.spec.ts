@@ -27,7 +27,7 @@ test('the map opens at the next place and scrolls by dragging without opening pl
 
   // Wheel scrolls too, and never past the end of the world.
   await page.mouse.wheel(0, 99999);
-  await expect.poll(() => scroll(page)).toBe(5200 - 1920);
+  await expect.poll(() => scroll(page)).toBe(5800 - 1920);
   await noErrors(errors);
 });
 
@@ -69,9 +69,9 @@ test('back from a place, the map rides on to the next one', async ({ page }) => 
 });
 
 test('the monster house on the mountain opens its rooms; when the road is done the arrow points there', async ({ page }) => {
-  const all = { pizza: [1, 1, 1, 1, 1], gnomes: [1, 1, 1], clock: [1, 1, 1], pier: [1, 1, 1], doctor: [1, 1, 1, 1], potion: [1, 1, 1, 1] };
+  const all = { pizza: [1, 1, 1, 1, 1], gnomes: [1, 1, 1], clock: [1, 1, 1], pier: [1, 1, 1], beaver: [1, 1, 1, 1], doctor: [1, 1, 1, 1], potion: [1, 1, 1, 1] };
   const errors = await openGame(page, { stars: all });
-  expect(await scroll(page)).toBe(5200 - 1920);
+  expect(await scroll(page)).toBe(5800 - 1920);
   await page.evaluate(() => (window as any).__game.scene.getScene('Town').openMonsters());
   await expect.poll(() => modalOpen(page)).toBe(true);
   await noErrors(errors);

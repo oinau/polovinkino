@@ -490,3 +490,63 @@ export function monsterAnswer(r: MonsterRound): Frac | number {
     case 'clock': return r.now + r.plus;
   }
 }
+
+// ---------- beaver's bridge: planks of different lengths that close a gap exactly ----------
+export interface BeaverRound {
+  /** Length of the hole in the bridge, in «whole planks». */
+  gap: Frac;
+  /** The beaver's pile: each plank can be used once. */
+  planks: Frac[];
+  /** Divisions drawn under the hole; 0 means none. */
+  marks: number;
+}
+
+export interface BeaverLevel {
+  name: string;
+  intro: string;
+  rounds: BeaverRound[];
+}
+
+const ONE = f(1, 1);
+const many = (n: number, p: Frac) => Array.from({ length: n }, () => p);
+
+export const BEAVER_LEVELS: BeaverLevel[] = [
+  {
+    name: 'Одинаковые доски',
+    intro: 'Бобр Бруно чинит мост, по которому все ходят к доктору. Дыра в мосту длиной ровно в одну целую доску. Нажимай на доски — они лягут в дыру. Закрой её без щелей!',
+    rounds: [
+      { gap: ONE, planks: many(6, f(1, 4)), marks: 4 },
+      { gap: ONE, planks: many(4, f(1, 3)), marks: 3 },
+      { gap: ONE, planks: many(3, f(1, 2)), marks: 2 },
+      { gap: ONE, planks: many(7, f(1, 6)), marks: 6 },
+    ],
+  },
+  {
+    name: 'Две длины',
+    intro: 'Теперь доски разной длины. Подумай, какие из них вместе дадут ровно одну целую.',
+    rounds: [
+      { gap: ONE, planks: [f(1, 2), ...many(4, f(1, 4))], marks: 4 },
+      { gap: ONE, planks: [f(1, 3), f(1, 3), ...many(3, f(1, 6))], marks: 6 },
+      { gap: ONE, planks: [f(1, 2), f(1, 2), f(1, 4), f(1, 4)], marks: 4 },
+      { gap: ONE, planks: [f(1, 2), f(1, 3), ...many(3, f(1, 6))], marks: 6 },
+    ],
+  },
+  {
+    name: 'Мало досок',
+    intro: 'Досок осталось мало, и делений на мосту нет. Выбери те, что закроют дыру ровно.',
+    rounds: [
+      { gap: ONE, planks: [f(1, 2), f(1, 3), f(1, 6), f(1, 4)], marks: 0 },
+      { gap: ONE, planks: [f(1, 3), f(1, 4), f(1, 2), f(1, 4)], marks: 0 },
+      { gap: ONE, planks: [f(1, 6), f(1, 2), f(1, 3), f(1, 3)], marks: 0 },
+    ],
+  },
+  {
+    name: 'Дыра поменьше',
+    intro: 'Эти дыры меньше целой доски. Сначала посмотри, какой длины дыра.',
+    rounds: [
+      { gap: f(3, 4), planks: [f(1, 2), f(1, 4), f(1, 4), f(1, 3)], marks: 0 },
+      { gap: f(2, 3), planks: [f(1, 3), f(1, 6), f(1, 6), f(1, 2)], marks: 0 },
+      { gap: f(5, 6), planks: [f(1, 2), f(1, 3), f(1, 6), f(1, 4)], marks: 0 },
+    ],
+  },
+];

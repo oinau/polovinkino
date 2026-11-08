@@ -1,7 +1,7 @@
 // Town map layout: places stand along a winding road in a world wider than the screen.
 import type { Place } from './store';
 
-export const WORLD_W = 5200;
+export const WORLD_W = 5800;
 /** Parallax: the far mountain with the monster house moves slowest and never leaves the screen. */
 export const FAR_FACTOR = 0.1;
 export const MID_FACTOR = 0.5;
@@ -23,14 +23,15 @@ export const SPOTS: Spot[] = [
   { key: 'house-gazebo', x: 980, y: 790, name: 'Беседка спорщиков', place: 'gnomes', scale: 0.92 },
   { key: 'house-clock', x: 1620, y: 850, name: 'Площадь с часами', place: 'clock', scale: 0.92 },
   { key: 'house-pier', x: 2280, y: 860, name: 'Пристань', place: 'pier', scale: 0.92 },
-  { key: 'house-doctor', x: 3060, y: 800, name: 'Кабинет доктора', place: 'doctor', scale: 1.3 },
-  { key: 'house-potion', x: 3680, y: 760, name: 'Зельеварня', place: 'potion', scale: 1.3 },
-  { key: 'house-courier', x: 4280, y: 830, name: 'Курьеры', scale: 1.3 },
+  { key: 'house-beaver', x: 2960, y: 870, name: 'Мост бобра Бруно', place: 'beaver', scale: 0.92 },
+  { key: 'house-doctor', x: 3620, y: 800, name: 'Кабинет доктора', place: 'doctor', scale: 1.3 },
+  { key: 'house-potion', x: 4240, y: 760, name: 'Зельеварня', place: 'potion', scale: 1.3 },
+  { key: 'house-courier', x: 4860, y: 830, name: 'Курьеры', scale: 1.3 },
 ];
 
 /** The road ends at the foot of the monster mountain. */
-export const ROAD_END = { x: 4900, y: 720 };
-/** River between the pier and the doctor; the road crosses it on a bridge. */
+export const ROAD_END = { x: 5480, y: 720 };
+/** River between the pier and the beaver's lodge; the road crosses it on Bruno's bridge. */
 export const RIVER = { x: 2640, w: 170 };
 
 export const maxScroll = () => WORLD_W - 1920;

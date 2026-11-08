@@ -2,7 +2,7 @@
 // can list every spoken phrase for recording.
 import type { CustomerId } from './art';
 import { HEIGHTS, monsterAnswer, pierNumbers, potionNumbers, type CrewId, type MonsterId, type MonsterRound, type Dispute, type IngredientId, type PatientId, type PierRound, type PotionRound } from './levels';
-import { capitalize, compare, str, words, type Frac } from './fractions';
+import { capitalize, compare, gcd, str, words, type Frac } from './fractions';
 import { digital, hourPart, meetWords, minuteMark, minutesWords, timeWords } from './time';
 
 // ---------- pizzeria ----------
@@ -117,7 +117,7 @@ export function explainDispute(d: Dispute, spoken = false) {
 export const VOICE_SAMPLE = 'Привет! Я буду читать заказы. Мне две третьих пиццы!';
 
 // ---------- heroes: name tags and the one-time introduction card ----------
-export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka' | 'pier' | 'heron' | 'giraffe' | 'pip' | 'monsters';
+export type HeroId = CustomerId | 'pyh' | 'gnomes' | 'nosochka' | 'pier' | 'heron' | 'giraffe' | 'pip' | 'monsters' | 'bruno';
 
 export const HEROES: Record<HeroId, { name: string; tag: string; textures: string[]; intro: string }> = {
   pyh: {
@@ -159,6 +159,10 @@ export const HEROES: Record<HeroId, { name: string; tag: string; textures: strin
   pip: {
     name: 'Совёнок Пип', tag: 'Пип', textures: ['pip-happy'],
     intro: 'Это совёнок Пип, ученик волшебника. Колпак ему пока велик, а зелья иногда взрываются. Помоги ему варить точно по рецепту!',
+  },
+  bruno: {
+    name: 'Бобр Бруно', tag: 'Бруно', textures: ['bruno-happy'],
+    intro: 'Это бобр Бруно, лучший строитель в Половинкино. Он чинит мост через реку, но доски у него все разной длины. Помоги ему!',
   },
   monsters: {
     name: 'Семейка монстров', tag: '', textures: ['mummy-happy', 'wolf-happy', 'slime-happy', 'spider-happy', 'bat-happy'],
@@ -463,3 +467,39 @@ export const DIPLOMA = {
   title: 'Диплом мастера дробей',
   text: 'Все места Половинкино пройдены, все жители довольны. Этот диплом вручается настоящему мастеру дробей!',
 };
+
+// ---------- beaver's bridge ----------
+const lcm = (a: number, b: number) => (a * b) / gcd(a, b);
+
+/** «1/2 + 1/4 + 1/4 = 2/4 + 1/4 + 1/4 = 4/4 = 1»: brought to one denominator when they differ. */
+export function beaverExplain(placed: Frac[], gap: Frac, spoken = false): string {
+  const L = placed.reduce((a, p) => lcm(a, p.d), gap.d);
+  const sum = placed.reduce((a, p) => a + (p.n * L) / p.d, 0);
+  const same = placed.every(p => p.d === placed[0].d) && (gap.n === gap.d || gap.d === placed[0].d);
+  const whole = sum === L;
+  if (spoken) {
+    const notes = [...new Set(placed.map(p => p.d))].filter(d => d !== L)
+      .map(d => `${capitalize(words({ n: 1, d }))} — это ${words({ n: L / d, d: L })}.`);
+    const terms = placed.map(p => words(p)).join(' плюс ');
+    return [...notes, `${capitalize(terms)} — ровно ${whole ? 'одна целая доска' : words(gap)}.`].join(' ');
+  }
+  const left = placed.map(str).join(' + ');
+  const mid = same ? '' : ` = ${placed.map(p => `${(p.n * L) / p.d}/${L}`).join(' + ')}`;
+  // When the hole is closed the sum is the hole: 4/4 = 1, or 9/12 = 3/4.
+  return `${left}${mid} = ${sum}/${L}${whole ? ' = 1' : gap.d !== L ? ` = ${str(gap)}` : ''}.`;
+}
+
+/** The plank is longer than what is left of the hole. */
+export function beaverTooLong(left: Frac, plank: Frac, spoken = false): string {
+  const fr = (x: Frac) => (spoken ? words(x) : str(x));
+  return `Не влезает! Осталось ${fr(left)}, а доска ${fr(plank)} — длиннее.`;
+}
+
+export const beaverAsk = (gap: Frac) =>
+  gap.n === gap.d ? 'Закрой дыру длиной в одну целую доску.' : `Дыра длиной ${words(gap)} доски. Закрой её ровно.`;
+
+export const BEAVER_LINES = {
+  done: 'Готово! Мост как новый!',
+  cross: 'Можно идти к доктору!',
+};
+export const BEAVER_NOTES = ['', 'Мост починен! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Бруно доволен.', 'Ни одной ошибки! Бруно берёт тебя в помощники!'];

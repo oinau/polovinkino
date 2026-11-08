@@ -539,6 +539,49 @@ function bat(mood: Mood) {
     <path d="M90 110 v14 M110 110 v14" stroke="${P.navy}" stroke-width="5" stroke-linecap="round"/>`);
 }
 
+// ---------- Beaver's bridge: Bruno the builder ----------
+function bruno(mood: Mood) {
+  const eyes = {
+    normal: `<circle cx="66" cy="70" r="6" fill="${P.navy}"/><circle cx="98" cy="70" r="6" fill="${P.navy}"/>`,
+    happy: `<path d="M59 72 q7 -9 14 0 M91 72 q7 -9 14 0" fill="none" ${S} stroke-width="4" stroke-linecap="round"/>`,
+    angry: `<circle cx="66" cy="72" r="5.5" fill="${P.navy}"/><circle cx="98" cy="72" r="5.5" fill="${P.navy}"/><path d="M54 56 L74 63 M110 56 L90 63" ${S} stroke-width="4" stroke-linecap="round"/>`,
+  }[mood];
+  const mouth = mood === 'angry'
+    ? `<path d="M70 106 Q82 100 94 106" fill="none" ${S} stroke-width="3.5" stroke-linecap="round"/>`
+    : `<path d="M68 100 Q82 ${mood === 'happy' ? 114 : 108} 96 100" fill="none" ${S} stroke-width="3.5" stroke-linecap="round"/>`;
+  return svg([0, 0, 190, 230], `
+    <path d="M118 200 Q176 196 182 150 Q186 120 160 126 Q130 132 112 176 Z" fill="${P.navy}" ${S} stroke-width="3" stroke-linejoin="round"/>
+    <path d="M128 182 L170 140 M140 190 L178 156 M136 160 L160 176 M150 146 L172 162" stroke="${P.paper}" stroke-width="2.5" opacity="0.5"/>
+    <path d="M58 222 v6 M108 222 v6" stroke="${P.navy}" stroke-width="12" stroke-linecap="round"/>
+    <ellipse cx="82" cy="164" rx="56" ry="62" fill="${P.mustardDark}" ${S} stroke-width="4"/>
+    <ellipse cx="82" cy="178" rx="34" ry="40" fill="${P.floor}"/>
+    <path d="M30 150 Q14 170 28 186 Q40 176 40 160 Z M134 150 Q150 170 136 186 Q124 176 124 160 Z" fill="${P.mustardDark}" ${S} stroke-width="3.5" stroke-linejoin="round"/>
+    <circle cx="38" cy="38" r="14" fill="${P.mustardDark}" ${S} stroke-width="3.5"/><circle cx="126" cy="38" r="14" fill="${P.mustardDark}" ${S} stroke-width="3.5"/>
+    <ellipse cx="82" cy="78" rx="52" ry="48" fill="${P.mustardDark}" ${S} stroke-width="4"/>
+    <ellipse cx="82" cy="96" rx="30" ry="22" fill="${P.floor}" ${S} stroke-width="3"/>
+    <ellipse cx="82" cy="84" rx="10" ry="7" fill="${P.navy}"/>
+    ${eyes}${mouth}
+    <rect x="72" y="106" width="9" height="16" rx="2" fill="#fff" ${S} stroke-width="2.5"/><rect x="83" y="106" width="9" height="16" rx="2" fill="#fff" ${S} stroke-width="2.5"/>
+    <path d="M44 34 Q82 6 120 34 L118 44 Q82 24 46 44 Z" fill="${P.mustard}" ${S} stroke-width="3" stroke-linejoin="round"/>`);
+}
+
+/** Bruno's lodge of sticks by the river. */
+function beaverLodge() {
+  let sticks = '';
+  for (let i = 0; i < 9; i++) {
+    const y = 290 - i * 18, half = 120 - i * 11;
+    sticks += `<path d="M${150 - half} ${y} L${150 + half} ${y - 6}" ${S} stroke-width="4" stroke-linecap="round"/>`;
+  }
+  return svg([0, 0, 300, 300], `
+    <rect x="0" y="262" width="300" height="38" fill="${P.water}"/>
+    <path d="M0 262 H300" ${S} stroke-width="4"/>
+    <path d="M30 290 Q40 140 150 120 Q260 140 270 290 Z" fill="${P.mustardDark}" ${S} stroke-width="4" stroke-linejoin="round"/>
+    ${sticks}
+    <path d="M120 290 V238 a30 30 0 0 1 60 0 V290 Z" fill="${P.navy}" ${S} stroke-width="4"/>
+    <path d="M150 120 L136 70 M150 120 L168 76 M150 120 L150 64" ${S} stroke-width="5" stroke-linecap="round"/>
+    <circle cx="168" cy="72" r="8" fill="${P.olive}" ${S} stroke-width="3"/>`);
+}
+
 function clockTower() {
   let ticks = '';
   for (let i = 0; i < 12; i++) {
@@ -582,6 +625,7 @@ export function allArt(): Art[] {
     list.push({ key: `slime-${m}`, svg: slime(m), scale: 2 });
     list.push({ key: `spider-${m}`, svg: spider(m), scale: 2 });
     list.push({ key: `bat-${m}`, svg: bat(m), scale: 2 });
+    list.push({ key: `bruno-${m}`, svg: bruno(m), scale: 1.8 });
   }
   list.push({ key: 'giraffe-surprised', svg: giraffe('surprised'), scale: 2.4 });
   list.push({ key: 'house-pizza', svg: pizzeriaHouse(), scale: 1.6 });
@@ -592,5 +636,6 @@ export function allArt(): Art[] {
   list.push({ key: 'house-potion', svg: house(P.mustard, 'flask'), scale: 1.1 });
   list.push({ key: 'house-doctor', svg: house(P.paper, 'doctor'), scale: 1.1 });
   list.push({ key: 'house-monsters', svg: monsterHouse(), scale: 1.1 });
+  list.push({ key: 'house-beaver', svg: beaverLodge(), scale: 1.6 });
   return list;
 }

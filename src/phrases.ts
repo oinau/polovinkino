@@ -1,17 +1,17 @@
 // Every phrase the game can say aloud, generated from the level data, for the voice studio.
-import { CLOCK_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, HEIGHTS, MONSTER_LEVELS, PIER_LEVELS, PIZZA_LEVELS, POTION_LEVELS, heightOf } from './levels';
+import { BEAVER_LEVELS, CLOCK_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, HEIGHTS, MONSTER_LEVELS, PIER_LEVELS, PIZZA_LEVELS, POTION_LEVELS, heightOf } from './levels';
 import {
   CLOCK_ASK, CLOCK_FINALE, CLOCK_NOTES, GNOME_NOTES, HEROES, LINES, PIZZA_NOTES, REACTIONS, clockLetter, clockSetExplain,
   clockWaitAsk, clockWaitExplain, DOCTOR_LINES, DOCTOR_NOTES, PATIENTS, doctorExplain, doctorReadAsk, doctorSetAsk, doctorSortAsk,
   doctorSortExplain, explainDispute, POTION_GAGS, POTION_LINES, POTION_NOTES, potionAsk, potionDenominatorHint, potionExplain,
-  potionQuestion, DIPLOMA, MONSTER_LINES, MONSTER_NOTES, monsterAsk, monsterExplain, monsterQuestion, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
+  potionQuestion, BEAVER_LINES, BEAVER_NOTES, beaverAsk, DIPLOMA, MONSTER_LINES, MONSTER_NOTES, monsterAsk, monsterExplain, monsterQuestion, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
 } from './lines';
 import { explainTime, timeWords } from './time';
 import { capitalize } from './fractions';
 import { phraseKey } from './voicekey';
 
 export type Speaker = 'narrator' | 'ekibas' | 'osya' | 'borovik' | 'usach' | 'ochkarik' | 'sardina' | 'rumb' | 'heron' | 'giraffe' | 'pip'
-  | 'mummy' | 'wolf' | 'slime' | 'spider' | 'bat';
+  | 'mummy' | 'wolf' | 'slime' | 'spider' | 'bat' | 'bruno';
 
 export const SPEAKERS: Record<Speaker, { name: string; color: string; rate: number }> = {
   narrator: { name: 'Ведущий', color: '#2E3A59', rate: 1 },
@@ -30,6 +30,7 @@ export const SPEAKERS: Record<Speaker, { name: string; color: string; rate: numb
   slime: { name: 'Малыш-слизень', color: '#A9B57E', rate: 1.3 },
   spider: { name: 'Паук', color: '#2E3A59', rate: 1.1 },
   bat: { name: 'Летучая мышь', color: '#2E3A59', rate: 1.35 },
+  bruno: { name: 'Бобр Бруно', color: '#C9973A', rate: 0.95 },
 };
 
 export interface Phrase {
@@ -184,6 +185,14 @@ export function allPhrases(): Phrase[] {
   add(MONSTER_LINES.guests, 'bat', 'Дом монстров, гостиная');
   MONSTER_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Дом монстров, итог'));
   add(`${DIPLOMA.title}! ${DIPLOMA.text}`, 'narrator', 'Диплом');
+
+  // The bridge: explanations depend on which planks the child picks, so only the fixed lines are listed.
+  BEAVER_LEVELS.forEach((lv, i) => {
+    add(lv.intro, 'narrator', `Мост бобра, уровень ${i + 1}, вступление`);
+    for (const r of lv.rounds) add(beaverAsk(r.gap), 'bruno', `Мост бобра, уровень ${i + 1}, задание`);
+  });
+  for (const line of Object.values(BEAVER_LINES)) add(line, 'bruno', 'Мост бобра');
+  BEAVER_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Мост бобра, итог'));
 
   return list;
 }

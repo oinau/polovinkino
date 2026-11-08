@@ -13,6 +13,7 @@ import { Pier } from './scenes/Pier';
 import { Doctor } from './scenes/Doctor';
 import { Potion } from './scenes/Potion';
 import { Monsters } from './scenes/Monsters';
+import { Beaver } from './scenes/Beaver';
 
 async function start() {
   // Canvas text needs the font (with Cyrillic glyphs) ready before the first draw.
@@ -31,7 +32,7 @@ async function start() {
       width: W,
       height: H,
     },
-    scene: [Boot, Town, Pizzeria, Gnomes, Clock, Pier, Doctor, Potion, Monsters],
+    scene: [Boot, Town, Pizzeria, Gnomes, Clock, Pier, Beaver, Doctor, Potion, Monsters],
   });
   if (import.meta.env.DEV) Object.assign(window, { __game: game });
 }
