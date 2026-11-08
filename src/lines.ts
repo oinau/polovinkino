@@ -234,17 +234,19 @@ export const PIER_LINES = {
 export const PIER_NOTES = ['', 'Клад поделён! Попробуй ещё раз без ошибок.', 'Почти без ошибок! Команда довольна.', 'Ни одной ошибки! Самый честный казначей на море!'];
 
 // ---------- doctor ----------
-export const PATIENTS: Record<PatientId, { name: string; gen: string }> = {
-  borovik: { name: 'Дед Боровик', gen: 'деда Боровика' },
-  tikhon: { name: 'Тихон', gen: 'Тихона' },
-  ekibas: { name: 'Екибас', gen: 'Екибаса' },
-  pyh: { name: 'Пых', gen: 'Пыха' },
-  osya: { name: 'Ося', gen: 'Оси' },
-  usach: { name: 'Усач', gen: 'Усача' },
-  sardina: { name: 'Капитан Сардина', gen: 'капитана Сардины' },
-  giraffe: { name: 'Жорж', gen: 'жирафа Жоржа' },
-  heron: { name: 'Доктор Цапля', gen: 'доктора Цапли' },
+/** Names stay in the nominative in speech: synthesizers often misplace stress in «Екибаса». */
+export const PATIENTS: Record<PatientId, { name: string; she?: boolean }> = {
+  borovik: { name: 'Дед Боровик' },
+  tikhon: { name: 'Тихон' },
+  ekibas: { name: 'Екибас' },
+  pyh: { name: 'Пых' },
+  osya: { name: 'Ося', she: true },
+  usach: { name: 'Усач' },
+  sardina: { name: 'Капитан Сардина', she: true },
+  giraffe: { name: 'Жорж' },
+  heron: { name: 'Доктор Цапля', she: true },
 };
+const his = (who: PatientId) => (PATIENTS[who].she ? 'Её' : 'Его');
 
 const NUM_GEN: Record<number, string> = { 2: 'двух', 3: 'трёх', 4: 'четырёх', 6: 'шести' };
 const WHOLE_WORDS: Record<number, string> = { 2: 'две вторых', 3: 'три третьих', 4: 'четыре четвёртых', 6: 'шесть шестых' };
@@ -259,10 +261,12 @@ export const mixed = (h: Frac) => `${str(h)} = 1 ${str({ n: h.n - h.d, d: h.d })
 export const heightWords = (h: Frac) => (isOne(h) ? 'ровно один домик' : `${words(h)} домика`);
 
 export const doctorSetAsk = (who: PatientId, h: Frac) =>
-  who === 'heron' ? `Теперь измерь меня! Мой рост — ${heightWords(h)}. Поставь планку!` : `Рост ${PATIENTS[who].gen} — ${heightWords(h)}. Поставь планку!`;
+  who === 'heron' ? `Теперь измерь меня! Мой рост — ${heightWords(h)}. Поставь планку!`
+    : `Это ${PATIENTS[who].name}. ${his(who)} рост — ${heightWords(h)}. Поставь планку!`;
 /** `stretched`: the giraffe has stretched his neck and is taller than usual. */
 export const doctorReadAsk = (who: PatientId, stretched = false) =>
-  stretched ? `${PATIENTS[who].name} вытянул шею. Какой у него теперь рост?` : `Какой рост у ${PATIENTS[who].gen}?`;
+  stretched ? `${PATIENTS[who].name} вытянул шею. Какой у него теперь рост?`
+    : `Под ростомером ${PATIENTS[who].name}. Какой у ${PATIENTS[who].she ? 'неё' : 'него'} рост?`;
 export const doctorSortAsk = (order: 'asc' | 'desc') =>
   order === 'asc' ? 'Расставь всех по росту: нажимай по очереди, от самого низкого до самого высокого.'
     : 'Расставь всех по росту: нажимай по очереди, от самого высокого до самого низкого.';

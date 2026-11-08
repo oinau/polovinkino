@@ -40,6 +40,29 @@ test('a recorded phrase plays instead of speech synthesis', async ({ page }) => 
   await noErrors(errors);
 });
 
+test('the synthesizer gets «пица» and the stress chosen for this device', async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as any;
+    w.__tts = [];
+    speechSynthesis.getVoices = () => [{ name: 'Test', lang: 'ru-RU' } as SpeechSynthesisVoice];
+    Object.defineProperty(SpeechSynthesisUtterance.prototype, 'voice', {
+      configurable: true,
+      get() { return this._voice; },
+      set(v) { this._voice = v; },
+    });
+    speechSynthesis.speak = (u: SpeechSynthesisUtterance) => { w.__tts.push(u.text); setTimeout(() => u.onend?.({} as any), 10); };
+  });
+  const errors = await openGame(page, { sound: true, stress: 'caps' });
+  const tts = await page.evaluate(async () => {
+    const audio = await import('/src/audio.ts');
+    audio.speak('Это Екибас. Он любит пиццу.');
+    await new Promise(r => setTimeout(r, 300));
+    return (window as any).__tts;
+  });
+  expect(tts).toEqual(['Это ЕкибАс. Он любит пицу.']);
+  await noErrors(errors);
+});
+
 test('studio exports recordings as a zip with a manifest', async ({ page }) => {
   await page.goto('/studio.html');
   await page.waitForSelector('#list .item');

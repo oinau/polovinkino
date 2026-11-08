@@ -1,3 +1,5 @@
+import type { StressMode } from './pronounce/dictionary';
+
 // Progress lives in localStorage: best stars per level and a coin purse.
 const KEY = 'polovinkino.v1';
 
@@ -11,6 +13,8 @@ interface Save {
   voice?: string;
   /** Heroes already introduced with a card. */
   met?: string[];
+  /** How stress is marked for this device's voices (chosen on pronounce.html). */
+  stress?: StressMode;
 }
 
 const fresh = (): Save => ({ stars: { pizza: [], gnomes: [], clock: [], pier: [], doctor: [] }, coins: 0, sound: true });
@@ -58,4 +62,6 @@ export const store = {
     persist();
   },
   set voice(v: string) { save.voice = v; persist(); },
+  get stress(): StressMode { return save.stress ?? 'none'; },
+  set stress(v: StressMode) { save.stress = v; persist(); },
 };

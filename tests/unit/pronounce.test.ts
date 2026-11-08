@@ -1,18 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { ACUTE, SAMPLES, VOWELS, variant } from '../../src/pronounce/samples';
+import { ACUTE, STRESSED, forSpeech, markStress } from '../../src/pronounce/dictionary';
 
-describe('pronunciation samples', () => {
-  it.each(SAMPLES)('$text: every stress mark lands on a vowel', s => {
-    expect(s.stress?.length, 'phrases stress the same words as the list').toBeGreaterThan(0);
-    for (const i of s.stress!) expect(VOWELS).toContain(s.text[i]);
+describe('speech dictionary', () => {
+  it.each(STRESSED)('%s: the stress mark follows a vowel', form => {
+    expect(form.match(/'/g)).toHaveLength(1);
+    expect('аеёиоуыэюя').toContain(form[form.indexOf("'") - 1].toLowerCase());
   });
 
-  it('builds the variants', () => {
-    const pizza = SAMPLES.find(s => s.text === 'пицца')!;
-    expect(variant(pizza, 'acute')).toBe(`пи${ACUTE}цца`);
-    expect(variant(pizza, 'caps')).toBe('пИцца');
-    expect(variant(pizza, 'respell')).toBe('пица');
-    const phrase = SAMPLES.find(s => s.text === 'Мне две третьих пиццы!')!;
-    expect(variant(phrase, 'caps')).toBe('Мне две трЕтьих пИццы!');
+  it('always respells «пицца» as heard', () => {
+    expect(forSpeech('Мне две третьих пиццы! Пиццерия «Кусочек».', 'none')).toBe('Мне две третьих пицы! Пицерия «Кусочек».');
+  });
+
+  it('marks stress only when asked, on whole words, in any case at the start', () => {
+    expect(forSpeech('Это Екибас и Цапля.', 'none')).toBe('Это Екибас и Цапля.');
+    expect(forSpeech('Это Екибас и Цапля.', 'acute')).toBe(`Это Екиба${ACUTE}с и Ца${ACUTE}пля.`);
+    expect(forSpeech('Кучки у Боровика.', 'caps')).toBe('КУчки у БоровикА.');
+    // Not inside other words: «тихонько» is not «Тихон».
+    expect(forSpeech('тихонько', 'caps')).toBe('тихонько');
+    expect(markStress("до'мика", 'caps')).toBe('дОмика');
   });
 });

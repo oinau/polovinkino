@@ -29,9 +29,9 @@ describe('doctor rounds', () => {
 
 describe('doctor lines', () => {
   it('ask', () => {
-    expect(doctorSetAsk('borovik', HEIGHTS.borovik)).toBe('Рост деда Боровика — одна четвёртая домика. Поставь планку!');
+    expect(doctorSetAsk('borovik', HEIGHTS.borovik)).toBe('Это Дед Боровик. Его рост — одна четвёртая домика. Поставь планку!');
     expect(doctorSetAsk('heron', HEIGHTS.heron)).toBe('Теперь измерь меня! Мой рост — ровно один домик. Поставь планку!');
-    expect(doctorSetAsk('giraffe', HEIGHTS.giraffe)).toBe('Рост жирафа Жоржа — пять четвёртых домика. Поставь планку!');
+    expect(doctorSetAsk('giraffe', HEIGHTS.giraffe)).toBe('Это Жорж. Его рост — пять четвёртых домика. Поставь планку!');
   });
 
   it('explain on the chart', () => {

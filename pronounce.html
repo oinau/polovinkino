@@ -23,14 +23,19 @@
     td.v small { font-weight: 700; font-size: 16px; text-transform: none; }
     .info { font-size: 13px; font-weight: 600; opacity: .75; word-break: break-all; }
     #custom { width: min(700px, 100%); }
+    h2 { margin: 24px 0 8px; font-size: 22px; font-weight: 900; }
+    .modes { background: var(--paper); border: 3px solid var(--navy); border-radius: 14px; padding: 10px 14px; display: inline-flex; }
+    #modes { display: inline-flex; gap: 16px; flex-wrap: wrap; }
+    #modes input { accent-color: var(--terra); }
   </style>
 </head>
 <body>
   <h1>Проверка произношения</h1>
   <p>
-    Каждое слово можно послушать по-разному: как есть, со знаком ударения (U+0301), с ударной
-    гласной заглавной буквой и переписанным «как слышится». Послушайте на каждом устройстве,
-    где играет ребёнок, и отметьте, какой вариант звучит лучше и где голос запинается.
+    Слова и фразы игры в разных вариантах: как написано, переписанные «как слышится»
+    (это игра делает всегда — например, «пица» вместо «пицца»), со знаком ударения (U+0301)
+    и с ударной гласной заглавной буквой. Голоса на разных устройствах понимают ударения
+    по-разному: послушайте и выберите ниже, как ставить ударения в игре <b>на этом устройстве</b>.
     Под кнопкой — ровно то, что уходит в синтезатор.
   </p>
   <div class="bar">
@@ -38,14 +43,22 @@
     <button id="stop">■ Стоп</button>
   </div>
   <div class="info" id="info"></div>
+  <div class="bar modes">В игре на этом устройстве ударения ставить: <span id="modes"></span></div>
   <div class="bar">
     <input type="text" id="custom" value="Мне две третьих пиццы!">
     <button id="accent" title="Поставить знак ударения после буквы перед курсором">+ знак ударения</button>
-    <button id="say">▶ Сказать</button>
+    <button id="say">▶ Как написано</button>
+    <button id="sayGame">▶ Как в игре</button>
   </div>
+  <h2>Слова</h2>
   <table>
-    <thead><tr><th>Слово</th><th>Как есть</th><th>Знак ударения</th><th>Заглавная гласная</th><th>Переписано</th></tr></thead>
-    <tbody id="rows"></tbody>
+    <thead><tr><th>Слово</th><th>Как написано</th><th>Переписано</th><th>Знак ударения</th><th>Заглавная гласная</th></tr></thead>
+    <tbody id="words"></tbody>
+  </table>
+  <h2>Фразы</h2>
+  <table>
+    <thead><tr><th>Фраза</th><th>Как написано</th><th>Переписано</th><th>Знак ударения</th><th>Заглавная гласная</th></tr></thead>
+    <tbody id="phrases"></tbody>
   </table>
   <script type="module" src="/src/pronounce/main.ts"></script>
 </body>

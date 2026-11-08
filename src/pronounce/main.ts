@@ -1,19 +1,18 @@
-// A page to hear stress and spelling variants on each device: which one a voice says best.
+// A page to hear stress and spelling variants on each device and pick what the game uses there.
 import '@fontsource/nunito/700.css';
 import '@fontsource/nunito/900.css';
-
-import { ACUTE, SAMPLES, variant } from './samples';
+import { ACUTE, STRESS_MODES, forSpeech, type StressMode } from './dictionary';
+import { PHRASES, WORDS } from './samples';
+import { store } from '../store';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const voiceSel = $<HTMLSelectElement>('voice');
 
-function voices() {
-  return speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().startsWith('ru'));
-}
+const voices = () => speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().startsWith('ru'));
 
 function fillVoices() {
   const list = voices();
-  const keep = voiceSel.value;
+  const keep = voiceSel.value || store.voice;
   voiceSel.innerHTML = '';
   for (const v of list) {
     const o = document.createElement('option');
@@ -48,36 +47,65 @@ function say(text: string, btn?: HTMLButtonElement) {
   speechSynthesis.speak(u);
 }
 
-function render() {
-  const rows = $('rows');
-  for (const s of SAMPLES) {
+/** Columns: as written, respelled (only where it differs), then each way of marking stress. */
+function variants(text: string): (string | null)[] {
+  const respelled = forSpeech(text, 'none');
+  return [
+    text,
+    respelled !== text ? respelled : null,
+    ...(['acute', 'caps'] as StressMode[]).map(m => {
+      const v = forSpeech(text, m);
+      return v !== respelled ? v : null;
+    }),
+  ];
+}
+
+function fill(tbody: HTMLElement, texts: string[]) {
+  for (const text of texts) {
     const tr = document.createElement('tr');
     const name = document.createElement('td');
-    name.textContent = s.text;
+    name.textContent = text;
     tr.append(name);
-    for (const kind of ['plain', 'acute', 'caps', 'respell'] as const) {
+    for (const v of variants(text)) {
       const td = document.createElement('td');
       td.className = 'v';
-      const text = variant(s, kind);
-      if (text) {
+      if (v) {
         const b = document.createElement('button');
         b.innerHTML = '▶ <small></small>';
-        b.querySelector('small')!.textContent = text;
-        b.onclick = () => say(text, b);
+        b.querySelector('small')!.textContent = v;
+        b.onclick = () => say(v, b);
         td.append(b);
       }
       tr.append(td);
     }
-    rows.append(tr);
+    tbody.append(tr);
   }
 }
 
-render();
+function modePicker() {
+  const box = $('modes');
+  for (const { mode, label } of STRESS_MODES) {
+    const l = document.createElement('label');
+    const r = document.createElement('input');
+    r.type = 'radio';
+    r.name = 'stress';
+    r.value = mode;
+    r.checked = store.stress === mode;
+    r.onchange = () => { store.stress = mode; };
+    l.append(r, ` ${label}`);
+    box.append(l);
+  }
+}
+
+fill($('words'), WORDS);
+fill($('phrases'), PHRASES);
+modePicker();
 fillVoices();
 speechSynthesis.addEventListener('voiceschanged', fillVoices);
 voiceSel.onchange = showInfo;
 $('stop').onclick = () => speechSynthesis.cancel();
 $('say').onclick = () => say($<HTMLInputElement>('custom').value, $('say'));
+$('sayGame').onclick = () => say(forSpeech($<HTMLInputElement>('custom').value, store.stress), $('sayGame'));
 $('accent').onclick = () => {
   const input = $<HTMLInputElement>('custom');
   const pos = input.selectionStart ?? input.value.length;

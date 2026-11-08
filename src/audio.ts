@@ -1,6 +1,7 @@
 import { store } from './store';
 import { VOICE_SAMPLE } from './lines';
 import { normalizePhrase, phraseKey, type VoiceManifest } from './voicekey';
+import { forSpeech } from './pronounce/dictionary';
 
 // Tiny synthesized sound effects: no audio files to ship.
 let ctx: AudioContext | null = null;
@@ -118,7 +119,8 @@ function tts(text: string, done: () => void) {
   const v = voice();
   if (!v || !('speechSynthesis' in window)) return done();
   try {
-    const u = new SpeechSynthesisUtterance(normalizePhrase(text));
+    // Respellings and stress marks go to the synthesizer only; recordings are found by the plain text.
+    const u = new SpeechSynthesisUtterance(forSpeech(normalizePhrase(text), store.stress));
     u.voice = v;
     u.lang = v.lang;
     u.rate = 0.95;
