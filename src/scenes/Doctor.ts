@@ -13,6 +13,8 @@ const GROUND = 960;
 /** Pixels in one «house»: from the ground to the top of the doctor's flat roof. */
 const U = 480;
 const HOUSE = { x: 640, w: 440, roof: 44 };
+/** On the sorting level the house stands behind the doctor, leaving an empty field for the lineup. */
+const SORT_HOUSE_X = 350;
 const RULER_X = 882;
 const BAR_END = 1150;
 const SPOT_X = 1010;
@@ -97,7 +99,8 @@ export class Doctor extends Phaser.Scene {
     this.marks = this.add.graphics().setDepth(5);
     this.bar = this.add.graphics().setDepth(6);
     this.maxK = this.level.ticks;
-    this.drawRuler();
+    // Nothing to measure on the sorting level: no chart, only heights to compare.
+    if (!this.sortOnly) this.drawRuler();
     this.bar.setVisible(this.level.ticks > 0);
 
     this.guide = new Guide(this, 150);
@@ -111,6 +114,8 @@ export class Doctor extends Phaser.Scene {
     else meetCard(this, HEROES.heron, () => { store.meet('heron'); this.showIntro(); });
   }
 
+  private get sortOnly() { return this.level.ticks === 0; }
+
   // ---------- scenery ----------
   private drawScenery() {
     const g = this.add.graphics();
@@ -119,7 +124,7 @@ export class Doctor extends Phaser.Scene {
     g.fillStyle(C.olive).fillRect(0, GROUND, W, H - GROUND);
     g.lineStyle(5, C.navy).lineBetween(0, GROUND, W, GROUND);
     // The doctor's house has a flat roof, so its top is level with the «1» on the chart.
-    const { x, w, roof } = HOUSE, left = x - w / 2, top = yOf(1);
+    const { w, roof } = HOUSE, x = this.sortOnly ? SORT_HOUSE_X : HOUSE.x, left = x - w / 2, top = yOf(1);
     g.fillStyle(C.wall).fillRect(left, top + roof, w, GROUND - top - roof).lineStyle(5, C.navy).strokeRect(left, top + roof, w, GROUND - top - roof);
     g.fillStyle(C.terra).fillRect(left - 20, top, w + 40, roof).lineStyle(5, C.navy).strokeRect(left - 20, top, w + 40, roof);
     g.fillStyle(C.paper).fillRoundedRect(x - 30, top + 80, 60, 60, 6).lineStyle(4, C.navy).strokeRoundedRect(x - 30, top + 80, 60, 60, 6);
@@ -504,7 +509,8 @@ export class Doctor extends Phaser.Scene {
   }
 
   private sortSlots(n: number) {
-    const from = 440, to = 1400, step = (to - from) / n;
+    // Right of the doctor's house, on the open field, so nobody stands against the wall.
+    const from = 620, to = 1840, step = (to - from) / n;
     return Array.from({ length: n }, (_, i) => from + step * (i + 0.5));
   }
 

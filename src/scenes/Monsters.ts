@@ -380,17 +380,19 @@ export class Monsters extends Phaser.Scene {
     }
   }
 
-  /** The draught blows out the right number of candles, group by group, so the answer shows. */
+  /** The draught blows out the right number of candles, group by group from the crack, so the answer shows. */
   private blowOut(r: Extract<MonsterRound, { kind: 'candles' }>, done: () => void) {
     const n = monsterAnswer(r) as number;
     for (let k = 0; k < 4; k++) {
       const w = this.keep(this.add.graphics());
-      w.lineStyle(5, C.navy, 0.6).beginPath().arc(0, 0, 40, -0.4, 0.4).strokePath();
+      // Wave fronts bulge leftwards: the draught comes from the crack on the right.
+      w.lineStyle(5, C.navy, 0.6).beginPath().arc(0, 0, 40, Math.PI - 0.4, Math.PI + 0.4).strokePath();
       w.setPosition(1850, 330 + k * 60);
       this.tweens.add({ targets: w, x: 300, alpha: 0, duration: 1100, delay: k * 120 });
     }
     sfx('click');
-    this.items.slice(0, n).forEach((c, i) => this.time.delayedCall(250 + i * 70, () => { c.done = false; this.drawCandle(c); }));
+    // The candles nearest the crack go out first.
+    this.items.slice(this.items.length - n).reverse().forEach((c, i) => this.time.delayedCall(250 + i * 70, () => { c.done = false; this.drawCandle(c); }));
     this.time.delayedCall(400 + n * 70, done);
   }
 
