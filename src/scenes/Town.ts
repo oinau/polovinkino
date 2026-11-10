@@ -39,7 +39,7 @@ export class Town extends Phaser.Scene {
     this.drawMountain(far);
     this.drawHills(mid);
     const ground = this.drawGround(world);
-    for (const s of SPOTS) this.addSpot(world, s);
+    for (const s of SPOTS) this.addLife(world, s, ground, this.addSpot(world, s));
     this.addResidents(world, ground);
     const next = nextSpot(SPOTS, done);
     if (next) this.addMarker(world, next.x, next.y - this.textures.getFrame(next.key).height * next.scale + 10);
@@ -167,6 +167,11 @@ export class Town extends Phaser.Scene {
     const house = this.add.image(x, top + 8, 'house-monsters').setOrigin(0.5, 1).setScale(0.62).setInteractive({ useHandCursor: true });
     house.on('pointerup', () => this.openMonsters());
     layer.add(house);
+    const bat = this.add.image(x - 120, top - 150, 'bat-normal').setScale(0.16);
+    layer.add(bat);
+    this.tweens.add({ targets: bat, x: x + 130, duration: 4200, yoyo: true, repeat: -1, ease: 'Sine.InOut', onYoyo: () => bat.setFlipX(true), onRepeat: () => bat.setFlipX(false) });
+    this.tweens.add({ targets: bat, y: top - 200, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    this.tweens.add({ targets: bat, scaleY: 0.1, duration: 160, yoyo: true, repeat: -1 });
   }
 
   private drawHills(layer: Phaser.GameObjects.Container) {
@@ -191,12 +196,15 @@ export class Town extends Phaser.Scene {
     g.fillStyle(C.olive).fillPoints([...top, v(WORLD_W + 40, H + 10), v(-40, H + 10)], true);
     g.lineStyle(5, C.navy).strokePoints(top);
 
-    // River with a few ripples.
+    // The river winds down from the hills into the bay between the pier and Bruno's lodge, then flows under the bridge.
+    const bay = new Phaser.Curves.Spline(RIVER.banks.map(([x, y]) => v(x, y))).getPoints(120);
+    g.fillStyle(C.water).fillPoints(bay, true);
+    // The banks below the waterlines hide behind the pier's and the lodge's water.
+    const tip = bay.reduce((a, p, i) => (p.y < bay[a].y ? i : a), 0);
+    g.lineStyle(5, C.navy).strokePoints(bay.filter((p, i) => p.y <= (i <= tip ? RIVER.pierWater : RIVER.lodgeWater)));
     const rx = RIVER.x - RIVER.w / 2, ry = groundY(RIVER.x);
     g.fillStyle(C.water).fillRect(rx, ry, RIVER.w, H - ry + 10);
-    g.lineStyle(5, C.navy).lineBetween(rx, ry, rx, H).lineBetween(rx + RIVER.w, ry, rx + RIVER.w, H);
-    g.lineStyle(4, C.paper);
-    for (const [dx, dy] of [[40, 90], [110, 170], [60, 230]]) g.lineBetween(rx + dx - 18, ry + dy, rx + dx + 18, ry + dy);
+    g.lineStyle(5, C.navy).lineBetween(rx, ry + 20, rx, H).lineBetween(rx + RIVER.w, ry + 20, rx + RIVER.w, H);
 
     const road = new Phaser.Curves.Spline([v(-40, 900), ...SPOTS.map(s => v(s.x, s.y + 38)), v(ROAD_END.x, ROAD_END.y + 40)]);
     const pts = road.getPoints(300);
@@ -223,6 +231,7 @@ export class Town extends Phaser.Scene {
     g.lineStyle(4, C.navy).strokePoints([v(ROAD_END.x - 90, ROAD_END.y - 160), v(ROAD_END.x + 70, ROAD_END.y - 160),
       v(ROAD_END.x + 100, ROAD_END.y - 130), v(ROAD_END.x + 70, ROAD_END.y - 100), v(ROAD_END.x - 90, ROAD_END.y - 100)], true);
     layer.add(g);
+    this.addRipples(layer, ry);
     layer.add(label(this, ROAD_END.x - 6, ROAD_END.y - 131, 'к монстрам', 26, HEX.navy, 900));
     // The signpost carries the monster house's stars and opens it too.
     layer.add(this.plaque(ROAD_END.x, ROAD_END.y + 92, 'Дом монстров', { have: store.totalStars('monsters'), total: MONSTER_LEVELS.length * 3 }));
@@ -230,6 +239,20 @@ export class Town extends Phaser.Scene {
     zone.on('pointerup', () => this.openMonsters());
     layer.add(zone);
     return groundY;
+  }
+
+  /** Ripples float downstream: through the bay and on under the bridge. */
+  private addRipples(layer: Phaser.GameObjects.Container, ry: number) {
+    const ripple = (x: number, y0: number, y1: number, half: number, delay: number) => {
+      const r = this.add.graphics().lineStyle(4, C.paper).lineBetween(-half, 0, half, 0).setPosition(x, y0).setAlpha(0);
+      layer.add(r);
+      // Fades in and out on the way.
+      this.tweens.add({ targets: r, y: y1, duration: 3600, delay, repeat: -1, ease: 'Linear',
+        onUpdate: () => r.setAlpha(Math.sin(((r.y - y0) / (y1 - y0)) * Math.PI)) });
+    };
+    ripple(RIVER.x - 10, 770, 836, 16, 0);
+    ripple(RIVER.x + 40, 790, 850, 18, 1800);
+    for (const [dx, delay] of [[-40, 0], [30, 1200], [-10, 2400]] as const) ripple(RIVER.x + dx, ry + 80, H - 20, 18, delay);
   }
 
   /** Name plate under a building: navy for open places, sand with «скоро» for closed ones. */
@@ -254,24 +277,89 @@ export class Town extends Phaser.Scene {
     return c;
   }
 
+  /** Returns what grows under the pointer: the building and, later, its moving details. */
   private addSpot(layer: Phaser.GameObjects.Container, s: Spot) {
     const img = this.add.image(s.x, s.y, s.key).setOrigin(0.5, 1).setScale(s.scale);
     layer.add(img);
+    const grow: Phaser.GameObjects.Image[] = [img];
     if (!s.place) {
       img.setTint(0xd9d2c3); // faded, but opaque: the mountain must not show through
       layer.add(this.plaque(s.x, s.y + 92, s.name, null));
-      return;
+      return grow;
     }
     const place = s.place;
     layer.add(this.plaque(s.x, s.y + 92, s.name, { have: store.totalStars(place), total: LEVELS[place].length * 3 }));
     img.setInteractive({ useHandCursor: true });
-    img.on('pointerover', () => this.tweens.add({ targets: img, scale: s.scale * 1.05, duration: 150 }));
-    img.on('pointerout', () => this.tweens.add({ targets: img, scale: s.scale, duration: 150 }));
+    const hover = (f: number) => grow.forEach(o => this.tweens.add({ targets: o, scale: o.getData('scale') * f, duration: 150 }));
+    grow.forEach(o => o.setData('scale', o.scale));
+    img.on('pointerover', () => hover(1.05));
+    img.on('pointerout', () => hover(1));
     img.on('pointerup', () => {
       if (this.moved) return;
       sfx('click');
       this.openPicker(place, s.name);
     });
+    return grow;
+  }
+
+  /**
+   * Something moves at every place, so the town looks lived in. Coordinates are in the building's art.
+   * The details sit right in the world layer: Phaser breaks rotated images in nested containers.
+   */
+  private addLife(c: Phaser.GameObjects.Container, s: Spot, groundY: (x: number) => number, grow: Phaser.GameObjects.Image[]) {
+    const k = this.textures.getFrame(s.key).width / 300 * s.scale;
+    const at = (x: number, y: number) => ({ x: s.x + (x - 150) * k, y: s.y + (y - 300) * k });
+    switch (s.place) {
+      case 'clock': {
+        const p = at(222, 267);
+        const heart = this.add.image(p.x, p.y, 'clock-heart').setOrigin(0.5, 17 / 36).setScale(s.scale);
+        c.add(heart);
+        this.tweens.add({ targets: heart, scale: s.scale * 1.2, duration: 260, yoyo: true, repeat: -1, repeatDelay: 900, ease: 'Sine.Out' });
+        break;
+      }
+      case 'pier': {
+        // Rocks on the water around its waterline.
+        const p = at(162, 252);
+        const ship = this.add.image(p.x, p.y, 'pier-ship').setOrigin(162 / 300, 252 / 300).setScale(s.scale).setAngle(-2);
+        c.add(ship);
+        grow.push(ship.setData('scale', s.scale));
+        this.tweens.add({ targets: ship, angle: 2, duration: 1700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+        this.tweens.add({ targets: ship, y: p.y + 4, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+        break;
+      }
+      case 'doctor': {
+        // Doctor Heron waits for patients by her height chart, now and then bending to look.
+        const heron = this.add.image(at(272, 300).x, s.y, 'heron-normal').setOrigin(0.5, 1).setScale(0.36);
+        c.add(heron);
+        grow.push(heron.setData('scale', 0.36));
+        this.tweens.add({ targets: heron, angle: -6, duration: 900, yoyo: true, hold: 600, repeat: -1, repeatDelay: 2200, ease: 'Sine.InOut' });
+        break;
+      }
+      case 'potion': {
+        // Bubbles rise from the flask by the door and pop.
+        const p = at(223, 200);
+        this.time.addEvent({ delay: 650, loop: true, callback: () => {
+          const r = Phaser.Math.Between(7, 12), dx = Phaser.Math.Between(-10, 10);
+          const b = this.add.graphics().fillStyle(C.oliveLight).fillCircle(0, 0, r).lineStyle(3, C.navy).strokeCircle(0, 0, r);
+          b.setPosition(p.x + dx, p.y);
+          c.add(b);
+          this.tweens.add({ targets: b, y: p.y - Phaser.Math.Between(80, 120), x: p.x + dx * 2, duration: 1800, ease: 'Sine.Out', onComplete: () => b.destroy() });
+          this.tweens.add({ targets: b, alpha: 0, delay: 1200, duration: 600 });
+        } });
+        break;
+      }
+      case 'courier': {
+        // Shustrik rides his scooter up and down the road by the house.
+        const sh = this.add.image(0, 0, 'shustrik-normal').setOrigin(0.5, 1).setScale(0.3);
+        c.add(sh);
+        const ride = { x: s.x - 260 };
+        const place = () => sh.setPosition(ride.x, groundY(ride.x) + 22);
+        place();
+        this.tweens.add({ targets: ride, x: s.x + 260, duration: 3200, yoyo: true, repeat: -1, hold: 700, repeatDelay: 700, ease: 'Sine.InOut',
+          onUpdate: place, onYoyo: () => sh.setFlipX(true), onRepeat: () => sh.setFlipX(false) });
+        break;
+      }
+    }
   }
 
   /** Residents hanging around their buildings. */
@@ -289,8 +377,8 @@ export class Town extends Phaser.Scene {
     this.tweens.add({ targets: [g1, g2], scaleY: 0.5, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     // Tikhon waits at the clock until Nosochka arrives in the last clock level.
     const together = store.stars('clock', CLOCK_LEVELS.length - 1) > 0;
-    const tikhon = at(together ? 'tikhon-happy' : 'tikhon-normal', clock + 270, 0.36);
-    if (together) at('nosochka-happy', clock + 350, 0.36, true);
+    const tikhon = at(together ? 'tikhon-happy' : 'tikhon-normal', clock + 185, 0.36);
+    if (together) at('nosochka-happy', clock + 260, 0.36, true);
     // Waiting impatiently: hops in place.
     else this.tweens.add({ targets: tikhon, y: tikhon.y - 14, duration: 380, yoyo: true, repeat: -1, repeatDelay: 900, ease: 'Quad.Out' });
   }

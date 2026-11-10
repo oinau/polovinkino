@@ -339,10 +339,20 @@ function rumb(mood: Mood) {
 }
 
 /** The pier: a ship with a sail split into three stripes, a jetty and a chest. */
-function pierShip() {
+/** The pier with its water, jetty and chest; the ship is a texture of its own so it can rock. */
+function pier() {
   return svg([0, 0, 300, 300], `
     <rect x="0" y="252" width="300" height="48" fill="${P.water}"/>
     <path d="M0 252 H300" ${S} stroke-width="4"/>
+    <rect x="0" y="236" width="80" height="16" fill="${P.mustardDark}" ${S} stroke-width="3"/>
+    <path d="M14 252 V292 M62 252 V292" ${S} stroke-width="6"/>
+    <rect x="18" y="206" width="42" height="30" rx="4" fill="${P.mustard}" ${S} stroke-width="3"/>
+    <path d="M18 218 H60 M39 214 v8" ${S} stroke-width="3"/>`);
+}
+
+/** Drawn in the pier's coordinates, so both textures line up at the same position and scale. */
+function pierShip() {
+  return svg([0, 0, 300, 300], `
     <path d="M150 220 V40" ${S} stroke-width="7" stroke-linecap="round"/>
     <path d="M150 40 l40 12 l-40 12 z" fill="${P.mustard}" ${S} stroke-width="3" stroke-linejoin="round"/>
     <path d="M100 76 H200 V196 H100 Z" fill="${P.paper}" ${S} stroke-width="4" stroke-linejoin="round"/>
@@ -350,11 +360,7 @@ function pierShip() {
     <path d="M100 76 H200 V196 H100 Z M100 116 H200 M100 156 H200" fill="none" ${S} stroke-width="4"/>
     <path d="M62 214 H262 L232 268 H96 Z" fill="${P.terra}" ${S} stroke-width="4" stroke-linejoin="round"/>
     <path d="M78 236 H248" ${S} stroke-width="3"/>
-    <circle cx="120" cy="250" r="7" fill="${P.paper}" ${S} stroke-width="3"/><circle cx="160" cy="250" r="7" fill="${P.paper}" ${S} stroke-width="3"/><circle cx="200" cy="250" r="7" fill="${P.paper}" ${S} stroke-width="3"/>
-    <rect x="0" y="236" width="80" height="16" fill="${P.mustardDark}" ${S} stroke-width="3"/>
-    <path d="M14 252 V292 M62 252 V292" ${S} stroke-width="6"/>
-    <rect x="18" y="206" width="42" height="30" rx="4" fill="${P.mustard}" ${S} stroke-width="3"/>
-    <path d="M18 218 H60 M39 214 v8" ${S} stroke-width="3"/>`);
+    <circle cx="120" cy="250" r="7" fill="${P.paper}" ${S} stroke-width="3"/><circle cx="160" cy="250" r="7" fill="${P.paper}" ${S} stroke-width="3"/><circle cx="200" cy="250" r="7" fill="${P.paper}" ${S} stroke-width="3"/>`);
 }
 
 // ---------- Doctor: heron the doctor and George the giraffe ----------
@@ -630,7 +636,13 @@ function clockTower() {
     <circle cx="150" cy="118" r="4" fill="${P.navy}"/>
     <rect x="126" y="186" width="48" height="26" rx="4" fill="${P.paper}" ${S} stroke-width="3"/>
     <path d="M132 292 V246 a18 18 0 0 1 36 0 V292" fill="${P.olive}" ${S} stroke-width="4"/>
-    <path d="M222 262 c-8 -10 -20 -2 -12 8 l12 12 l12 -12 c8 -10 -4 -18 -12 -8 z" fill="${P.terra}" ${S} stroke-width="3" stroke-linejoin="round"/>`);
+`);
+}
+
+/** The heart by the clock tower: its own texture so it can beat. */
+function heart() {
+  return svg([0, 0, 40, 36], `
+    <path d="M20 10 c-8 -10 -20 -2 -12 8 l12 12 l12 -12 c8 -10 -4 -18 -12 -8 z" fill="${P.terra}" ${S} stroke-width="3" stroke-linejoin="round"/>`);
 }
 
 export const CUSTOMERS = ['ekibas', 'osya', 'tikhon', 'borovik'] as const;
@@ -665,7 +677,9 @@ export function allArt(): Art[] {
   list.push({ key: 'house-gazebo', svg: gazebo(), scale: 1.6 });
   list.push({ key: 'house-clock', svg: clockTower(), scale: 1.6 });
   list.push({ key: 'house-courier', svg: house(P.terra, 'box'), scale: 1.1 });
-  list.push({ key: 'house-pier', svg: pierShip(), scale: 1.6 });
+  list.push({ key: 'house-pier', svg: pier(), scale: 1.6 });
+  list.push({ key: 'pier-ship', svg: pierShip(), scale: 1.6 });
+  list.push({ key: 'clock-heart', svg: heart(), scale: 1.6 });
   list.push({ key: 'house-potion', svg: house(P.mustard, 'flask'), scale: 1.1 });
   list.push({ key: 'house-doctor', svg: house(P.paper, 'doctor'), scale: 1.1 });
   list.push({ key: 'house-monsters', svg: monsterHouse(), scale: 1.1 });

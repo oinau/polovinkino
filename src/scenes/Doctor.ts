@@ -104,7 +104,7 @@ export class Doctor extends Phaser.Scene {
     this.bar.setVisible(this.level.ticks > 0);
 
     this.guide = new Guide(this, 150);
-    this.measure = new Button(this, SPOT_X, BTN_Y, 'Мерить', () => this.doMeasure(), { w: 300, h: 92, fill: C.olive, color: HEX.paper });
+    this.measure = new Button(this, SPOT_X, BTN_Y, 'Измерить', () => this.doMeasure(), { w: 300, h: 92, fill: C.olive, color: HEX.paper });
     this.measure.setVisible(false);
     this.next = new Button(this, SPOT_X, BTN_Y, 'Дальше →', () => this.nextRound(), { w: 340, h: 92, fill: C.olive, color: HEX.paper });
     this.next.setVisible(false);
@@ -338,7 +338,7 @@ export class Doctor extends Phaser.Scene {
     this.drawBar();
     this.phase = 'set';
     this.measure.setVisible(true).setEnabled(true);
-    this.guide.say('Тяни планку за красную ручку, потом нажми «Мерить».');
+    this.guide.say('Тяни планку за красную ручку, потом нажми «Измерить».');
     if (this.level.guide) this.guide.point(BAR_END + 18, yOf(this.barK / this.level.ticks) - 30, 'top');
   }
 
