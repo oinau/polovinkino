@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { C, HEX, W, H } from '../theme';
+import { C, HEX, W, H, BLEED } from '../theme';
 import { COURIER_LEVELS, courierTolerance, type CourierLevel, type CourierRound } from '../levels';
 import type { Mood } from '../art';
 import { sfx, speak, speakSeq } from '../audio';
@@ -119,19 +119,20 @@ export class Courier extends Phaser.Scene {
   private drawStreet() {
     // Sky and hills stay put; the street itself scrolls.
     const bg = this.add.graphics();
-    bg.fillStyle(C.cream).fillRect(0, 0, W, H);
-    bg.fillStyle(C.oliveLight).fillEllipse(500, SIDEWALK, 1200, 300).fillEllipse(1500, SIDEWALK, 1200, 340);
+    bg.fillStyle(C.cream).fillRect(-BLEED, -BLEED, W + 2 * BLEED, H + 2 * BLEED);
+    bg.fillStyle(C.oliveLight).fillEllipse(500, SIDEWALK, 1200, 300).fillEllipse(1500, SIDEWALK, 1200, 340)
+      .fillEllipse(-600, SIDEWALK, 1200, 340).fillEllipse(2600, SIDEWALK, 1200, 300);
 
     this.world = this.add.container(0, 0);
     const g = this.add.graphics();
     this.world.add(g);
-    const end = this.xOf(this.level.length), wide = Math.max(W, end + 300);
-    g.fillStyle(C.sand).fillRect(0, SIDEWALK, wide, ROAD.top - SIDEWALK);
-    g.fillStyle(C.floor).fillRect(0, ROAD.top, wide, ROAD.bottom - ROAD.top);
-    g.fillStyle(C.olive).fillRect(0, ROAD.bottom, wide, H - ROAD.bottom);
-    g.lineStyle(5, C.navy).lineBetween(0, SIDEWALK, wide, SIDEWALK).lineBetween(0, ROAD.top, wide, ROAD.top).lineBetween(0, ROAD.bottom, wide, ROAD.bottom);
+    const end = this.xOf(this.level.length), wide = Math.max(W, end + 300) + BLEED;
+    g.fillStyle(C.sand).fillRect(-BLEED, SIDEWALK, wide + BLEED, ROAD.top - SIDEWALK);
+    g.fillStyle(C.floor).fillRect(-BLEED, ROAD.top, wide + BLEED, ROAD.bottom - ROAD.top);
+    g.fillStyle(C.olive).fillRect(-BLEED, ROAD.bottom, wide + BLEED, H - ROAD.bottom + BLEED);
+    g.lineStyle(5, C.navy).lineBetween(-BLEED, SIDEWALK, wide, SIDEWALK).lineBetween(-BLEED, ROAD.top, wide, ROAD.top).lineBetween(-BLEED, ROAD.bottom, wide, ROAD.bottom);
     g.lineStyle(6, C.paper);
-    for (let x = 20; x < wide; x += 90) g.lineBetween(x, (ROAD.top + ROAD.bottom) / 2 + 30, x + 45, (ROAD.top + ROAD.bottom) / 2 + 30);
+    for (let x = 20 - 1080; x < wide; x += 90) g.lineBetween(x, (ROAD.top + ROAD.bottom) / 2 + 30, x + 45, (ROAD.top + ROAD.bottom) / 2 + 30);
 
     // The pizzeria at 0 and the sign at the end of the street.
     this.world.add(this.add.image(X0 - 150, SIDEWALK, 'house-pizza').setOrigin(0.5, 1).setScale(0.5));

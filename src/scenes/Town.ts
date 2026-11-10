@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
-import { C, HEX, W, H } from '../theme';
+import { C, HEX, W, H, BLEED } from '../theme';
 import { store, type Place } from '../store';
 import { BEAVER_LEVELS, CLOCK_LEVELS, COURIER_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, MONSTER_LEVELS, PIER_LEVELS, PIZZA_LEVELS, POTION_LEVELS } from '../levels';
-import { Button, label, iconButton, modal, starShape } from '../ui';
-import { nextVoice, ruVoices, sfx, voiceName } from '../audio';
+import { Button, label, iconButton, modal, soundButton, starShape } from '../ui';
+import { nextVoice, previewVoice, ruVoices, sfx, voiceName } from '../audio';
+import { STRESS_MODES } from '../pronounce/dictionary';
+import { edges, margins, onResize } from '../stage';
 import { FAR_FACTOR, MID_FACTOR, RIVER, ROAD_END, SPOTS, WORLD_W, clampScroll, maxScroll, nextSpot, scrollTo, type Spot } from '../map';
 
 const LEVELS: Record<Place, { name: string }[]> = { pizza: PIZZA_LEVELS, gnomes: GNOME_LEVELS, clock: CLOCK_LEVELS, pier: PIER_LEVELS, beaver: BEAVER_LEVELS, doctor: DOCTOR_LEVELS, potion: POTION_LEVELS, courier: COURIER_LEVELS, monsters: MONSTER_LEVELS };
@@ -25,12 +27,13 @@ export class Town extends Phaser.Scene {
   /** The pointer moved far enough to count as a drag: taps on buildings are ignored. */
   private moved = false;
   private pan?: Phaser.Tweens.Tween;
+  private snd!: ReturnType<typeof soundButton>;
 
   constructor() { super('Town'); }
 
   create() {
     this.layers = [];
-    this.add.graphics().fillStyle(C.cream).fillRect(0, 0, W, H);
+    this.add.graphics().fillStyle(C.cream).fillRect(-BLEED, -BLEED, W + 2 * BLEED, H + 2 * BLEED);
     const clouds = this.layer(0.05);
     const far = this.layer(FAR_FACTOR);
     const mid = this.layer(MID_FACTOR);
@@ -49,24 +52,32 @@ export class Town extends Phaser.Scene {
     label(this, W / 2, 90, 'Половинкино', 84, HEX.navy, 900);
     label(this, W / 2, 160, 'город, где всё делят на части', 34, HEX.terra, 800);
 
-    const snd = iconButton(this, W - 70, 66, store.sound ? 'sound' : 'mute', () => {
-      store.sound = !store.sound;
-      snd.setIcon(store.sound ? 'sound' : 'mute');
-    });
-    this.addVoicePicker(() => snd.setIcon('sound'));
-    new Button(this, W - 170, 152, 'Начать заново', () => this.confirmReset(), { w: 280, h: 56, size: 24 });
-
+    const coins = this.add.container(0, 0);
     const coin = this.add.graphics();
     coin.fillStyle(C.mustard).fillCircle(70, 66, 26).lineStyle(5, C.navy).strokeCircle(70, 66, 26);
     coin.lineStyle(4, C.mustardDark).strokeCircle(70, 66, 14);
-    this.add.text(112, 66, String(store.coins), { fontFamily: 'Nunito', fontSize: '42px', fontStyle: '900', color: HEX.navy }).setOrigin(0, 0.5);
+    coins.add([coin, this.add.text(112, 66, String(store.coins), { fontFamily: 'Nunito', fontSize: '42px', fontStyle: '900', color: HEX.navy }).setOrigin(0, 0.5)]);
+
+    // Three round buttons in the corner: settings, full screen, sound. Sound stays out of the menu: it may be needed in a hurry.
+    this.snd = soundButton(this, 0, 0);
+    const corner = [iconButton(this, 0, 0, 'gear', () => this.openSettings()), this.fullscreenButton(), this.snd]
+      .filter(b => b !== null).reverse();
 
     this.navL = this.navButton(70, -1);
     this.navR = this.navButton(W - 70, 1);
     this.setupScrolling();
+    // The corner buttons and the arrows keep to the screen edges, the title to the middle.
+    onResize(this, () => {
+      const e = edges(this);
+      coins.setPosition(e.left, e.top);
+      corner.forEach((b, i) => b.setPosition(e.right - 70 - i * 110, e.top + 66));
+      this.navL.setX(e.left + 70);
+      this.navR.setX(e.right - 70);
+      this.setScroll(this.scroll);
+    });
 
     // Back from a place: start where the map was left, then ride to the next place if it changed.
-    const target = next ? scrollTo(next.x) : maxScroll();
+    const target = next ? scrollTo(next.x, this.extra) : maxScroll(this.extra);
     const nextKey = next?.key ?? null;
     if (lastScroll === null) this.setScroll(target);
     else {
@@ -77,6 +88,9 @@ export class Town extends Phaser.Scene {
     this.events.once('shutdown', () => { lastScroll = this.scroll; });
   }
 
+  /** How far the screen shows past the stage on each side. */
+  private get extra() { return Math.max(0, margins(this).x); }
+
   private layer(f: number) {
     const c = this.add.container(0, 0);
     this.layers.push({ c, f });
@@ -84,16 +98,16 @@ export class Town extends Phaser.Scene {
   }
 
   setScroll(v: number) {
-    this.scroll = clampScroll(v);
+    this.scroll = clampScroll(v, this.extra);
     for (const { c, f } of this.layers) c.x = -Math.round(this.scroll * f);
-    this.navL.setVisible(this.scroll > 0);
-    this.navR.setVisible(this.scroll < maxScroll());
+    this.navL.setVisible(this.scroll > this.extra);
+    this.navR.setVisible(this.scroll < maxScroll(this.extra));
   }
 
   panTo(v: number, duration = 900) {
     this.pan?.stop();
     const from = { v: this.scroll };
-    this.pan = this.tweens.add({ targets: from, v: clampScroll(v), duration, ease: 'Sine.InOut', onUpdate: () => this.setScroll(from.v) });
+    this.pan = this.tweens.add({ targets: from, v: clampScroll(v, this.extra), duration, ease: 'Sine.InOut', onUpdate: () => this.setScroll(from.v) });
   }
 
   private modalOpen() {
@@ -193,7 +207,7 @@ export class Town extends Phaser.Scene {
       return best.y;
     };
     const g = this.add.graphics();
-    g.fillStyle(C.olive).fillPoints([...top, v(WORLD_W + 40, H + 10), v(-40, H + 10)], true);
+    g.fillStyle(C.olive).fillPoints([...top, v(WORLD_W + 40, H + BLEED), v(-40, H + BLEED)], true);
     g.lineStyle(5, C.navy).strokePoints(top);
 
     // The river winds down from the hills into the bay between the pier and Bruno's lodge, then flows under the bridge.
@@ -203,8 +217,8 @@ export class Town extends Phaser.Scene {
     const tip = bay.reduce((a, p, i) => (p.y < bay[a].y ? i : a), 0);
     g.lineStyle(5, C.navy).strokePoints(bay.filter((p, i) => p.y <= (i <= tip ? RIVER.pierWater : RIVER.lodgeWater)));
     const rx = RIVER.x - RIVER.w / 2, ry = groundY(RIVER.x);
-    g.fillStyle(C.water).fillRect(rx, ry, RIVER.w, H - ry + 10);
-    g.lineStyle(5, C.navy).lineBetween(rx, ry + 20, rx, H).lineBetween(rx + RIVER.w, ry + 20, rx + RIVER.w, H);
+    g.fillStyle(C.water).fillRect(rx, ry, RIVER.w, H - ry + BLEED);
+    g.lineStyle(5, C.navy).lineBetween(rx, ry + 20, rx, H + BLEED).lineBetween(rx + RIVER.w, ry + 20, rx + RIVER.w, H + BLEED);
 
     const road = new Phaser.Curves.Spline([v(-40, 900), ...SPOTS.map(s => v(s.x, s.y + 38)), v(ROAD_END.x, ROAD_END.y + 40)]);
     const pts = road.getPoints(300);
@@ -400,20 +414,49 @@ export class Town extends Phaser.Scene {
     this.tweens.add({ targets: g, y: y - 26, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
   }
 
-  /** «Голос: Anna» — tap to hear the next voice. Hidden when the browser has no Russian voice. */
-  private addVoicePicker(onSoundOn: () => void) {
-    const caption = () => `Голос: ${voiceName()}`;
-    const b = new Button(this, W - 330, 66, caption(), () => {
-      store.sound = true;
-      onSoundOn();
-      nextVoice();
-      b.setCaption(caption());
-    }, { w: 360, h: 70, size: 28 });
-    const refresh = () => { b.setVisible(ruVoices().length > 0).setCaption(caption()); };
-    refresh();
-    // Voices load asynchronously in some browsers.
-    if ('speechSynthesis' in window) speechSynthesis.addEventListener('voiceschanged', refresh);
-    this.events.once('shutdown', () => speechSynthesis.removeEventListener('voiceschanged', refresh));
+  /** Full screen on and off; hidden where the browser can't do it (iPhone Safari allows it for video only). */
+  private fullscreenButton() {
+    if (!this.scale.fullscreen.available) return null;
+    const icon = () => (this.scale.isFullscreen ? 'shrink' : 'expand');
+    const b = iconButton(this, 0, 0, icon(), () => this.scale.toggleFullscreen());
+    const sync = () => b.setIcon(icon());
+    this.scale.on(Phaser.Scale.Events.ENTER_FULLSCREEN, sync);
+    this.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, sync);
+    this.events.once('shutdown', () => {
+      this.scale.off(Phaser.Scale.Events.ENTER_FULLSCREEN, sync);
+      this.scale.off(Phaser.Scale.Events.LEAVE_FULLSCREEN, sync);
+    });
+    return b;
+  }
+
+  /** Settings behind the gear: voice and stress marks (only with browser voices), and starting over. */
+  private openSettings() {
+    const voices = ruVoices().length > 0;
+    const rows = voices ? 3 : 1, h = 174 + rows * 120;
+    const layer = modal(this, 900, h);
+    const top = H / 2 - h / 2;
+    layer.add(label(this, W / 2, top + 80, 'Настройки', 56, HEX.navy, 900));
+    layer.add(iconButton(this, W / 2 + 400, top + 60, 'close', () => layer.destroy(), 40));
+    let y = top + 190;
+    const row = (caption: string, onClick: (b: Button) => void, opts: { fill?: number; color?: string } = {}) => {
+      const b: Button = new Button(this, W / 2, y, caption, () => onClick(b), { w: 640, h: 88, size: 32, ...opts });
+      layer.add(b);
+      y += 120;
+    };
+    if (voices) {
+      // Each choice is heard at once, so it is picked by ear; it turns the sound on too.
+      const soundOn = () => { store.sound = true; this.snd.setIcon('sound'); };
+      row(`Голос: ${voiceName()}`, b => { soundOn(); nextVoice(); b.setCaption(`Голос: ${voiceName()}`); });
+      const stressCaption = () => `Ударения: ${STRESS_MODES.find(m => m.mode === store.stress)?.label}`;
+      row(stressCaption(), b => {
+        const i = STRESS_MODES.findIndex(m => m.mode === store.stress);
+        store.stress = STRESS_MODES[(i + 1) % STRESS_MODES.length].mode;
+        b.setCaption(stressCaption());
+        soundOn();
+        previewVoice();
+      });
+    }
+    row('Начать заново', () => { layer.destroy(); this.confirmReset(); }, { fill: C.terra, color: HEX.paper });
   }
 
   private confirmReset() {

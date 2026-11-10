@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { C, HEX, W, H } from '../theme';
+import { C, HEX, W, H, BLEED } from '../theme';
 import { MONSTER_LEVELS, monsterAnswer, type MonsterId, type MonsterLevel, type MonsterRound } from '../levels';
 import { sameValue, str, type Frac } from '../fractions';
 import type { Mood } from '../art';
@@ -101,22 +101,22 @@ export class Monsters extends Phaser.Scene {
   // ---------- scenery ----------
   private drawRoom() {
     const room = this.level.room, g = this.add.graphics();
-    g.fillStyle(ROOM_WALL[room]).fillRect(0, 0, W, H);
-    g.fillStyle(room === 'cellar' ? C.mustardDark : C.floor).fillRect(0, FLOOR, W, H - FLOOR);
-    g.lineStyle(5, C.navy).lineBetween(0, FLOOR, W, FLOOR);
+    g.fillStyle(ROOM_WALL[room]).fillRect(-BLEED, -BLEED, W + 2 * BLEED, H + 2 * BLEED);
+    g.fillStyle(room === 'cellar' ? C.mustardDark : C.floor).fillRect(-BLEED, FLOOR, W + 2 * BLEED, H - FLOOR + BLEED);
+    g.lineStyle(5, C.navy).lineBetween(-BLEED, FLOOR, W + BLEED, FLOOR);
     // A cobweb garland and a crooked picture: cosy, a little spooky.
     g.lineStyle(3, C.navy, 0.5);
-    for (let x = 0; x < W; x += 160) g.beginPath().arc(x + 80, 96, 80, 0.15 * Math.PI, 0.85 * Math.PI).strokePath();
+    for (let x = -960; x < W + 960; x += 160) g.beginPath().arc(x + 80, 96, 80, 0.15 * Math.PI, 0.85 * Math.PI).strokePath();
     if (room === 'attic') {
       g.fillStyle(C.mustardDark);
-      for (const x of [200, 1720]) g.fillRect(x - 14, 0, 28, FLOOR).lineStyle(4, C.navy).strokeRect(x - 14, 0, 28, FLOOR);
+      for (const x of [200, 1720]) g.fillRect(x - 14, -BLEED, 28, FLOOR + BLEED).lineStyle(4, C.navy).strokeRect(x - 14, -BLEED, 28, FLOOR + BLEED);
     }
     if (room === 'cellar') {
       // Stone blocks.
       g.lineStyle(3, C.mustardDark, 0.6);
       for (let y = 200, row = 0; y < FLOOR; y += 90, row++) {
-        g.lineBetween(0, y, W, y);
-        for (let x = (row % 2) * 110; x < W; x += 220) g.lineBetween(x, y, x, y + 90);
+        g.lineBetween(-BLEED, y, W + BLEED, y);
+        for (let x = (row % 2) * 110 - 1320; x < W + BLEED; x += 220) g.lineBetween(x, y, x, y + 90);
       }
       // The crack the draught comes through.
       g.lineStyle(6, C.navy).beginPath().moveTo(1840, 300).lineTo(1810, 360).lineTo(1846, 420).lineTo(1812, 480).strokePath();

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { C, HEX, W, H } from '../theme';
+import { C, HEX, W, H, BLEED } from '../theme';
 import { CLOCK_LEVELS, type ClockLevel, type ClockRound } from '../levels';
 import type { Mood } from '../art';
 import { capitalize } from '../fractions';
@@ -79,10 +79,10 @@ export class Clock extends Phaser.Scene {
   // ---------- scenery ----------
   private drawSquare() {
     const g = this.add.graphics();
-    g.fillStyle(C.cream).fillRect(0, 0, W, H);
+    g.fillStyle(C.cream).fillRect(-BLEED, -BLEED, W + 2 * BLEED, H + 2 * BLEED);
     g.fillStyle(C.oliveLight).fillEllipse(260, 920, 1100, 360).fillEllipse(1700, 930, 1100, 380);
-    g.fillStyle(C.olive).fillRect(0, 900, W, H - 900);
-    g.lineStyle(5, C.navy).lineBetween(0, 900, W, 900);
+    g.fillStyle(C.olive).fillRect(-BLEED, 900, W + 2 * BLEED, H - 900 + BLEED);
+    g.lineStyle(5, C.navy).lineBetween(-BLEED, 900, W + BLEED, 900);
     // Lamp post on the right, a quiet bit of decoration.
     g.fillStyle(C.navy).fillRect(1846, 420, 12, 480);
     g.fillStyle(C.mustard).fillCircle(1852, 410, 26);

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { C, HEX, W, H } from '../theme';
+import { C, HEX, W, H, BLEED } from '../theme';
 import { INGREDIENTS, POTION_LEVELS, potionNumbers, potionOptions, type IngredientId, type PotionLevel, type PotionRound } from '../levels';
 import { sameValue, str, type Frac } from '../fractions';
 import type { Mood } from '../art';
@@ -102,9 +102,9 @@ export class Potion extends Phaser.Scene {
   // ---------- scenery ----------
   private drawRoom() {
     const g = this.add.graphics();
-    g.fillStyle(C.cream).fillRect(0, 0, W, H);
-    g.fillStyle(C.sand).fillRect(0, FLOOR, W, H - FLOOR);
-    g.lineStyle(5, C.navy).lineBetween(0, FLOOR, W, FLOOR);
+    g.fillStyle(C.cream).fillRect(-BLEED, -BLEED, W + 2 * BLEED, H + 2 * BLEED);
+    g.fillStyle(C.sand).fillRect(-BLEED, FLOOR, W + 2 * BLEED, H - FLOOR + BLEED);
+    g.lineStyle(5, C.navy).lineBetween(-BLEED, FLOOR, W + BLEED, FLOOR);
     // A shelf with jars far back, for the mood.
     g.fillStyle(C.mustardDark).fillRect(1240, 260, 640, 18).lineStyle(4, C.navy).strokeRect(1240, 260, 640, 18);
     [[1290, C.olive], [1380, C.terra], [1470, C.water], [1580, C.mustard], [1680, C.oliveLight], [1790, C.terra]].forEach(([x, c], i) => {

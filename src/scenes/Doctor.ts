@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { C, HEX, W, H } from '../theme';
+import { C, HEX, W, H, BLEED } from '../theme';
 import { DOCTOR_LEVELS, HEIGHTS, heightOf, type DoctorLevel, type DoctorRound, type PatientId } from '../levels';
 import { sameValue, str, type Frac } from '../fractions';
 import { sfx, speak, speakSeq } from '../audio';
@@ -119,10 +119,10 @@ export class Doctor extends Phaser.Scene {
   // ---------- scenery ----------
   private drawScenery() {
     const g = this.add.graphics();
-    g.fillStyle(C.cream).fillRect(0, 0, W, H);
+    g.fillStyle(C.cream).fillRect(-BLEED, -BLEED, W + 2 * BLEED, H + 2 * BLEED);
     g.fillStyle(C.oliveLight).fillEllipse(300, GROUND, 1300, 380).fillEllipse(1600, GROUND, 1200, 420);
-    g.fillStyle(C.olive).fillRect(0, GROUND, W, H - GROUND);
-    g.lineStyle(5, C.navy).lineBetween(0, GROUND, W, GROUND);
+    g.fillStyle(C.olive).fillRect(-BLEED, GROUND, W + 2 * BLEED, H - GROUND + BLEED);
+    g.lineStyle(5, C.navy).lineBetween(-BLEED, GROUND, W + BLEED, GROUND);
     // The doctor's house has a flat roof, so its top is level with the «1» on the chart.
     const { w, roof } = HOUSE, x = this.sortOnly ? SORT_HOUSE_X : HOUSE.x, left = x - w / 2, top = yOf(1);
     g.fillStyle(C.wall).fillRect(left, top + roof, w, GROUND - top - roof).lineStyle(5, C.navy).strokeRect(left, top + roof, w, GROUND - top - roof);
@@ -190,14 +190,15 @@ export class Doctor extends Phaser.Scene {
   // ---------- the bar ----------
   private setupDrag() {
     const toK = (y: number) => Phaser.Math.Clamp(Math.round(((GROUND - y) / U) * this.level.ticks), 0, this.maxK);
-    const inColumn = (p: Phaser.Input.Pointer) => p.x > RULER_X - 60 && p.x < BAR_END + 70 && p.y > yOf(this.maxK / this.level.ticks) - 60 && p.y < GROUND + 20;
+    // World coordinates: the camera is shifted when the screen is wider or taller than the stage.
+    const inColumn = (p: Phaser.Input.Pointer) => p.worldX > RULER_X - 60 && p.worldX < BAR_END + 70 && p.worldY > yOf(this.maxK / this.level.ticks) - 60 && p.worldY < GROUND + 20;
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (this.phase !== 'set' || !inColumn(p)) return;
       this.dragging = true;
-      this.setBar(toK(p.y));
+      this.setBar(toK(p.worldY));
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (this.dragging && p.isDown) this.setBar(toK(p.y));
+      if (this.dragging && p.isDown) this.setBar(toK(p.worldY));
     });
     this.input.on('pointerup', () => { this.dragging = false; });
   }

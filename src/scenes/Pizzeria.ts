@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { C, HEX, W, H } from '../theme';
+import { C, HEX, W, H, BLEED } from '../theme';
 import { PIZZA_LEVELS, type Order, type PizzaLevel } from '../levels';
 import { type Mood } from '../art';
 import { capitalize, mul, sameValue, simplify, str, words, type Frac } from '../fractions';
@@ -254,20 +254,20 @@ export class Pizzeria extends Phaser.Scene {
   // ---------- scenery ----------
   private drawRoom() {
     const g = this.add.graphics();
-    g.fillStyle(C.cream).fillRect(0, 0, W, H);
-    g.fillStyle(C.wall).fillRect(0, 560, W, 450);
-    g.fillStyle(C.floor).fillRect(0, 1010, W, 70);
-    g.lineStyle(5, C.navy).lineBetween(0, 1010, W, 1010);
-    g.lineStyle(3, C.navy, 0.25).lineBetween(0, 560, W, 560);
+    g.fillStyle(C.cream).fillRect(-BLEED, -BLEED, W + 2 * BLEED, H + 2 * BLEED);
+    g.fillStyle(C.wall).fillRect(-BLEED, 560, W + 2 * BLEED, 450);
+    g.fillStyle(C.floor).fillRect(-BLEED, 1010, W + 2 * BLEED, 70 + BLEED);
+    g.lineStyle(5, C.navy).lineBetween(-BLEED, 1010, W + BLEED, 1010);
+    g.lineStyle(3, C.navy, 0.25).lineBetween(-BLEED, 560, W + BLEED, 560);
   }
 
   private drawCounter() {
     const g = this.add.graphics();
-    g.fillStyle(C.sand).fillRect(-10, COUNTER_TOP, 1270, 44);
-    g.lineStyle(5, C.navy).strokeRect(-10, COUNTER_TOP, 1270, 44);
-    g.fillStyle(C.terra).fillRect(-10, COUNTER_TOP + 44, 1260, H);
-    g.lineStyle(5, C.navy).strokeRect(-10, COUNTER_TOP + 44, 1260, H);
-    g.fillStyle(C.olive).fillRect(-8, COUNTER_TOP + 70, 1253, 16);
+    g.fillStyle(C.sand).fillRect(-BLEED, COUNTER_TOP, 1260 + BLEED, 44);
+    g.lineStyle(5, C.navy).strokeRect(-BLEED, COUNTER_TOP, 1260 + BLEED, 44);
+    g.fillStyle(C.terra).fillRect(-BLEED, COUNTER_TOP + 44, 1250 + BLEED, H + BLEED);
+    g.lineStyle(5, C.navy).strokeRect(-BLEED, COUNTER_TOP + 44, 1250 + BLEED, H + BLEED);
+    g.fillStyle(C.olive).fillRect(-BLEED, COUNTER_TOP + 70, 1245 + BLEED, 16);
   }
 
   private drawDots() {

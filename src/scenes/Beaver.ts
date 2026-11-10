@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { C, HEX, W, H } from '../theme';
+import { C, HEX, W, H, BLEED } from '../theme';
 import { BEAVER_LEVELS, type BeaverLevel, type BeaverRound } from '../levels';
 import { gcd, str, type Frac } from '../fractions';
 import type { Mood } from '../art';
@@ -83,17 +83,17 @@ export class Beaver extends Phaser.Scene {
   // ---------- scenery ----------
   private drawRiver() {
     const g = this.add.graphics();
-    g.fillStyle(C.cream).fillRect(0, 0, W, H);
-    g.fillStyle(C.water).fillRect(0, WATER.top, W, WATER.bottom - WATER.top);
+    g.fillStyle(C.cream).fillRect(-BLEED, -BLEED, W + 2 * BLEED, H + 2 * BLEED);
+    g.fillStyle(C.water).fillRect(-BLEED, WATER.top, W + 2 * BLEED, WATER.bottom - WATER.top);
     g.lineStyle(4, C.paper);
     for (const [x, y] of [[620, 700], [900, 760], [1180, 690], [760, 820], [1080, 830]]) {
       g.beginPath().arc(x, y, 16, Math.PI, 0).arc(x + 32, y, 16, Math.PI, 0).strokePath();
     }
     // Banks: left and right of the river, and the near bank at the bottom where the planks lie.
-    g.fillStyle(C.olive).fillRect(0, BANK_Y, 420, WATER.bottom - BANK_Y).fillRect(1460, BANK_Y, W - 1460, WATER.bottom - BANK_Y);
-    g.fillStyle(C.oliveLight).fillRect(0, WATER.bottom, W, H - WATER.bottom);
-    g.lineStyle(5, C.navy).lineBetween(0, BANK_Y, 420, BANK_Y).lineBetween(1460, BANK_Y, W, BANK_Y)
-      .lineBetween(0, WATER.bottom, W, WATER.bottom).lineBetween(420, BANK_Y, 420, WATER.bottom).lineBetween(1460, BANK_Y, 1460, WATER.bottom);
+    g.fillStyle(C.olive).fillRect(-BLEED, BANK_Y, 420 + BLEED, WATER.bottom - BANK_Y).fillRect(1460, BANK_Y, W - 1460 + BLEED, WATER.bottom - BANK_Y);
+    g.fillStyle(C.oliveLight).fillRect(-BLEED, WATER.bottom, W + 2 * BLEED, H - WATER.bottom + BLEED);
+    g.lineStyle(5, C.navy).lineBetween(-BLEED, BANK_Y, 420, BANK_Y).lineBetween(1460, BANK_Y, W + BLEED, BANK_Y)
+      .lineBetween(-BLEED, WATER.bottom, W + BLEED, WATER.bottom).lineBetween(420, BANK_Y, 420, WATER.bottom).lineBetween(1460, BANK_Y, 1460, WATER.bottom);
   }
 
   /** The two halves of the bridge with the hole between them, and division marks under the hole. */

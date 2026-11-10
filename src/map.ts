@@ -46,10 +46,14 @@ export const RIVER = {
   ] as [number, number][],
 };
 
-export const maxScroll = () => WORLD_W - 1920;
-export const clampScroll = (v: number) => Math.max(0, Math.min(maxScroll(), v));
+/**
+ * Scroll is the world x at the stage's left edge. `extra` is how far a wide screen shows past the
+ * stage on each side: the view must still stay inside the world.
+ */
+export const maxScroll = (extra = 0) => WORLD_W - 1920 - extra;
+export const clampScroll = (v: number, extra = 0) => Math.max(extra, Math.min(maxScroll(extra), v));
 /** Scroll that puts a world x in the middle of the screen. */
-export const scrollTo = (x: number) => clampScroll(x - 960);
+export const scrollTo = (x: number, extra = 0) => clampScroll(x - 960, extra);
 
 /** The first open place that still has a level without stars; null when everything is done. */
 export function nextSpot(spots: Spot[], done: (p: Place) => boolean): Spot | null {

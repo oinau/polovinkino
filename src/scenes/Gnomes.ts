@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { C, HEX, W, H } from '../theme';
+import { C, HEX, W, H, BLEED } from '../theme';
 import { GNOME_LEVELS, type Dispute, type GnomeLevel } from '../levels';
 import type { Mood } from '../art';
 import type { Frac } from '../fractions';
@@ -103,10 +103,10 @@ export class Gnomes extends Phaser.Scene {
 
   private drawGround() {
     const g = this.add.graphics();
-    g.fillStyle(C.cream).fillRect(0, 0, W, H);
+    g.fillStyle(C.cream).fillRect(-BLEED, -BLEED, W + 2 * BLEED, H + 2 * BLEED);
     g.fillStyle(C.oliveLight).fillEllipse(300, 900, 1200, 420).fillEllipse(1650, 910, 1200, 440);
-    g.fillStyle(C.olive).fillRect(0, 900, W, H - 900);
-    g.lineStyle(5, C.navy).lineBetween(0, 900, W, 900);
+    g.fillStyle(C.olive).fillRect(-BLEED, 900, W + 2 * BLEED, H - 900 + BLEED);
+    g.lineStyle(5, C.navy).lineBetween(-BLEED, 900, W + BLEED, 900);
   }
 
   private drawDots() {

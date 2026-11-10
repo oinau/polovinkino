@@ -4,6 +4,7 @@ import '@fontsource/nunito/800.css';
 import '@fontsource/nunito/900.css';
 import { HEX, W, H } from './theme';
 import { loadRecordings } from './audio';
+import { keepStageCentered } from './stage';
 import { Boot } from './scenes/Boot';
 import { Town } from './scenes/Town';
 import { Pizzeria } from './scenes/Pizzeria';
@@ -28,13 +29,14 @@ async function start() {
     parent: 'game',
     backgroundColor: HEX.cream,
     scale: {
-      mode: Phaser.Scale.FIT,
+      mode: Phaser.Scale.EXPAND,
       autoCenter: Phaser.Scale.CENTER_BOTH,
       width: W,
       height: H,
     },
     scene: [Boot, Town, Pizzeria, Gnomes, Clock, Pier, Beaver, Doctor, Potion, Courier, Monsters],
   });
+  game.events.once(Phaser.Core.Events.READY, () => keepStageCentered(game));
   if (import.meta.env.DEV) Object.assign(window, { __game: game });
 }
 

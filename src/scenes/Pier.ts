@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { C, HEX, W, H } from '../theme';
+import { C, HEX, W, H, BLEED } from '../theme';
 import { PIER_LEVELS, pierNumbers, type PierLevel, type PierRound } from '../levels';
 import type { Mood } from '../art';
 import { sfx, speak, speakSeq } from '../audio';
@@ -113,18 +113,18 @@ export class Pier extends Phaser.Scene {
   // ---------- scenery ----------
   private drawDeck() {
     const g = this.add.graphics();
-    g.fillStyle(C.cream).fillRect(0, 0, W, H);
-    g.fillStyle(C.water).fillRect(0, 330, W, 250);
-    g.lineStyle(5, C.navy).lineBetween(0, 330, W, 330);
+    g.fillStyle(C.cream).fillRect(-BLEED, -BLEED, W + 2 * BLEED, H + 2 * BLEED);
+    g.fillStyle(C.water).fillRect(-BLEED, 330, W + 2 * BLEED, 250);
+    g.lineStyle(5, C.navy).lineBetween(-BLEED, 330, W + BLEED, 330);
     g.lineStyle(4, C.paper);
     for (const [x, y] of [[160, 400], [520, 460], [980, 390], [1380, 470], [1760, 410], [1200, 530]]) {
       g.beginPath().arc(x, y, 18, Math.PI, 0).arc(x + 36, y, 18, Math.PI, 0).strokePath();
     }
     // Deck planks.
-    g.fillStyle(C.sand).fillRect(0, 580, W, H - 580);
-    g.lineStyle(5, C.navy).lineBetween(0, 580, W, 580);
+    g.fillStyle(C.sand).fillRect(-BLEED, 580, W + 2 * BLEED, H - 580 + BLEED);
+    g.lineStyle(5, C.navy).lineBetween(-BLEED, 580, W + BLEED, 580);
     g.lineStyle(3, C.floor);
-    for (let y = 660; y < H; y += 80) g.lineBetween(0, y, W, y);
+    for (let y = 660; y < H + BLEED; y += 80) g.lineBetween(-BLEED, y, W + BLEED, y);
     // Table under the piles.
     g.fillStyle(C.navy).fillRoundedRect(TABLE.x - 30, TABLE.y - 120, TABLE.w + 60, 250, 24);
     g.fillStyle(C.mustardDark).fillRoundedRect(TABLE.x - 30, TABLE.y - 128, TABLE.w + 60, 250, 24);

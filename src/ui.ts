@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { C, HEX, FONT, W, H } from './theme';
+import { C, HEX, FONT, W, H, BLEED } from './theme';
+import { edges, onResize } from './stage';
 import { sfx, speak, stopSpeaking } from './audio';
 import { store } from './store';
 
@@ -88,8 +89,10 @@ export class Button extends Phaser.GameObjects.Container {
   }
 }
 
-/** Round icon button drawn with Graphics (back, sound, close). */
-export function iconButton(scene: Scene, x: number, y: number, icon: 'home' | 'sound' | 'mute' | 'close' | 'replay', onClick: () => void, r = 44) {
+export type Icon = 'home' | 'sound' | 'mute' | 'close' | 'replay' | 'gear' | 'expand' | 'shrink';
+
+/** Round icon button drawn with Graphics (back, sound, close, settings, full screen). */
+export function iconButton(scene: Scene, x: number, y: number, icon: Icon, onClick: () => void, r = 44) {
   const c = scene.add.container(x, y);
   const g = scene.add.graphics();
   const drawIcon = (kind: typeof icon) => {
@@ -114,6 +117,23 @@ export function iconButton(scene: Scene, x: number, y: number, icon: 'home' | 's
         g.beginPath(); g.arc(4 * s, 0, 12 * s, -0.8, 0.8); g.strokePath();
         g.beginPath(); g.arc(4 * s, 0, 22 * s, -0.8, 0.8); g.strokePath();
       }
+    } else if (kind === 'gear') {
+      const teeth = 8, pts: Phaser.Math.Vector2[] = [];
+      for (let i = 0; i < teeth * 4; i++) {
+        const a = (i / (teeth * 4)) * Math.PI * 2, out = i % 4 < 2;
+        pts.push(new Phaser.Math.Vector2(Math.cos(a) * (out ? 23 : 16) * s, Math.sin(a) * (out ? 23 : 16) * s));
+      }
+      g.fillPoints(pts, true);
+      g.fillStyle(C.paper).fillCircle(0, 0, 7 * s);
+    } else if (kind === 'expand' || kind === 'shrink') {
+      // Four corner brackets: pointing out to enter full screen, in to leave it.
+      g.lineStyle(6, C.navy);
+      const a = 20 * s, b = 9 * s;
+      for (const [dx, dy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        const cx = kind === 'expand' ? dx * a : dx * b, cy = kind === 'expand' ? dy * a : dy * b;
+        const len = kind === 'expand' ? -11 * s : 11 * s;
+        g.beginPath().moveTo(cx + dx * len, cy).lineTo(cx, cy).lineTo(cx, cy + dy * len).strokePath();
+      }
     } else if (kind === 'close') {
       g.lineStyle(7, C.navy);
       g.lineBetween(-14 * s, -14 * s, 14 * s, 14 * s);
@@ -131,13 +151,25 @@ export function iconButton(scene: Scene, x: number, y: number, icon: 'home' | 's
 
 /** Home + sound buttons shared by every play scene. */
 export function topBar(scene: Scene, title: string, onHome: () => void) {
-  iconButton(scene, 70, 66, 'home', () => { stopSpeaking(); onHome(); });
-  const snd = iconButton(scene, W - 70, 66, store.sound ? 'sound' : 'mute', () => {
+  const home = iconButton(scene, 70, 66, 'home', () => { stopSpeaking(); onHome(); });
+  const snd = soundButton(scene, W - 70, 66);
+  // The buttons keep to the screen corners; the title stays over the stage.
+  onResize(scene, () => {
+    const e = edges(scene);
+    home.setPosition(e.left + 70, e.top + 66);
+    snd.setPosition(e.right - 70, e.top + 66);
+  });
+  label(scene, W / 2, 62, title, 40, HEX.navy, 900);
+}
+
+/** Sound on/off: always in sight, since it may be needed in a hurry. */
+export function soundButton(scene: Scene, x: number, y: number) {
+  const snd = iconButton(scene, x, y, store.sound ? 'sound' : 'mute', () => {
     store.sound = !store.sound;
     if (!store.sound) stopSpeaking();
     snd.setIcon(store.sound ? 'sound' : 'mute');
   });
-  label(scene, W / 2, 62, title, 40, HEX.navy, 900);
+  return snd;
 }
 
 // ---------- stacked fraction ----------
@@ -301,7 +333,7 @@ export function starShape(g: Phaser.GameObjects.Graphics, x: number, y: number, 
 // ---------- modal panel ----------
 export function modal(scene: Scene, w: number, h: number) {
   const layer = scene.add.container(0, 0).setDepth(100);
-  const dim = scene.add.rectangle(W / 2, H / 2, W, H, C.navy, 0.55).setInteractive();
+  const dim = scene.add.rectangle(W / 2, H / 2, W + 2 * BLEED, H + 2 * BLEED, C.navy, 0.55).setInteractive();
   const g = scene.add.graphics();
   g.fillStyle(C.navy).fillRoundedRect(W / 2 - w / 2, H / 2 - h / 2 + 10, w, h, 40);
   g.fillStyle(C.cream).fillRoundedRect(W / 2 - w / 2, H / 2 - h / 2, w, h, 40);

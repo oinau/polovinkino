@@ -23,4 +23,6 @@ export const C = Object.fromEntries(
 
 export const W = 1920;
 export const H = 1080;
+/** Screens wider or taller than 16:9 show past the 1920×1080 stage: backgrounds reach this far beyond it. */
+export const BLEED = 1200;
 export const FONT = 'Nunito, sans-serif';

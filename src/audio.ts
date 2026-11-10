@@ -96,9 +96,14 @@ export function nextVoice() {
   if (!list.length) return '';
   const i = list.findIndex(v => v.name === voiceName());
   store.voice = list[(i + 1) % list.length].name;
+  previewVoice();
+  return store.voice;
+}
+
+/** Say the sample with the browser voice, the way it will read the game (voice, stress marks). */
+export function previewVoice() {
   stopSpeaking();
   tts(VOICE_SAMPLE, () => {});
-  return store.voice;
 }
 
 // ---------- recorded phrases (made in the voice studio) ----------
