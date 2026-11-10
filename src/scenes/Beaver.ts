@@ -4,7 +4,7 @@ import { BEAVER_LEVELS, type BeaverLevel, type BeaverRound } from '../levels';
 import { gcd, str, type Frac } from '../fractions';
 import type { Mood } from '../art';
 import { sfx, speak, speakSeq } from '../audio';
-import { BEAVER_LINES, BEAVER_NOTES, HEROES, beaverAsk, beaverExplain, beaverTooLong } from '../lines';
+import { BEAVER_LINES, BEAVER_NOTES, HEROES, beaverAsk, beaverAskMissing, beaverExplain, beaverTooLong, beaverTooShort } from '../lines';
 import { store } from '../store';
 import { Bubble, Button, Guide, coinsBurst, label, meetCard, modal, nameTag, resultModal, starsFor, topBar, wrapLabel } from '../ui';
 
@@ -17,8 +17,12 @@ const BANK_Y = 620;
 const WATER = { top: 640, bottom: 860 };
 const PILE_Y = 950;
 const BRUNO = { x: 1770, y: BANK_Y };
+/** A plank seen end-on in the stack: only its tag shows. */
+const END = { w: 120, h: 64 };
+const STACK_X = 330;
 
-type Plank = { p: Frac; c: Phaser.GameObjects.Container; placed: boolean; slot: number };
+/** `long` is the plank at its true length, `end` its end in the stack; `fixed` ones were laid by Bruno. */
+type Plank = { p: Frac; c: Phaser.GameObjects.Container; long: Phaser.GameObjects.Container; end?: Phaser.GameObjects.Container; placed: boolean; slot: number; fixed?: boolean };
 
 const lcm = (a: number, b: number) => (a * b) / gcd(a, b);
 
@@ -146,25 +150,63 @@ export class Beaver extends Phaser.Scene {
   private units(p: Frac) { return (p.n * this.L) / p.d; }
   private filled() { return this.placed.reduce((a, k) => a + this.units(k.p), 0); }
 
-  private makePlank(p: Frac, slot: number) {
+  private makePlank(p: Frac, slot: number, fixed = false) {
     const w = this.value(p) * U;
     const c = this.add.container(0, 0).setDepth(5);
+    const long = this.add.container(0, 0);
     const g = this.add.graphics();
     g.fillStyle(C.navy).fillRect(-w / 2, -PLANK_H / 2 + 6, w, PLANK_H);
     g.fillStyle(C.mustard).fillRect(-w / 2, -PLANK_H / 2, w, PLANK_H).lineStyle(4, C.navy).strokeRect(-w / 2, -PLANK_H / 2, w, PLANK_H);
     g.lineStyle(2, C.mustardDark).lineBetween(-w / 2 + 10, -6, w / 2 - 10, -10).lineBetween(-w / 2 + 14, 10, w / 2 - 14, 8);
-    c.add([g, label(this, 0, -1, str(p), 26, HEX.navy, 900)]);
-    c.setSize(w, PLANK_H + 20).setInteractive({ useHandCursor: true });
-    const plank: Plank = { p, c, placed: false, slot };
-    c.on('pointerup', () => this.tap(plank));
+    long.add([g, label(this, 0, -1, str(p), 26, HEX.navy, 900)]);
+    c.add(long);
+    const plank: Plank = { p, c, long, placed: fixed, slot, fixed };
+    if (this.level.stacked && !fixed) {
+      // The end of the plank with its tag: its length can't be seen from here.
+      const end = this.add.container(0, 0);
+      const e = this.add.graphics();
+      e.fillStyle(C.navy).fillRect(-END.w / 2, -END.h / 2 + 6, END.w, END.h);
+      e.fillStyle(C.mustardDark).fillRect(-END.w / 2, -END.h / 2, END.w, END.h).lineStyle(4, C.navy).strokeRect(-END.w / 2, -END.h / 2, END.w, END.h);
+      e.lineStyle(2, C.navy, 0.35).strokeCircle(-END.w / 2 + 14, END.h / 2 - 12, 7).strokeCircle(END.w / 2 - 16, -END.h / 2 + 12, 5);
+      e.fillStyle(C.paper).fillRoundedRect(-34, -18, 68, 36, 8).lineStyle(3, C.navy).strokeRoundedRect(-34, -18, 68, 36, 8);
+      end.add([e, label(this, 0, -1, str(p), 26, HEX.navy, 900)]);
+      c.add(end);
+      plank.end = end;
+    }
+    this.showLong(plank, fixed || !this.level.stacked);
+    if (!fixed) c.on('pointerup', () => this.tap(plank));
     return plank;
   }
 
-  /** Planks lie on the near bank in a row. */
-  private pileX(slot: number) {
+  /** In the bridge a plank shows its length; in the stack only its end with the tag. */
+  private showLong(k: Plank, long: boolean) {
+    const show = long || !k.end;
+    k.long.setVisible(show);
+    k.end?.setVisible(!show);
+    if (k.fixed) return;
+    k.c.removeInteractive();
+    if (show) k.c.setSize(this.value(k.p) * U, PLANK_H + 20); else k.c.setSize(END.w + 10, END.h + 10);
+    k.c.setInteractive({ useHandCursor: true });
+  }
+
+  /** Where a plank waits on the near bank: in a row, or in the stack (rows of 3, 2, 1). */
+  private pilePos(slot: number) {
+    if (this.level.stacked) {
+      const rows = [3, 2, 1];
+      let row = 0, col = slot;
+      while (col >= rows[row]) col -= rows[row++];
+      return { x: STACK_X + (col - (rows[row] - 1) / 2) * (END.w + 6), y: PILE_Y + 20 - row * (END.h + 6) };
+    }
     let x = 200;
     for (let i = 0; i < slot; i++) x += this.value(this.planks[i].p) * U + 30;
-    return x + (this.value(this.planks[slot].p) * U) / 2;
+    return { x: x + (this.value(this.planks[slot].p) * U) / 2, y: PILE_Y };
+  }
+
+  /** Back to the bank (or the stack). */
+  private toPile(k: Plank, duration = 260) {
+    const to = this.pilePos(k.slot);
+    this.showLong(k, false);
+    this.tweens.add({ targets: k.c, x: to.x, y: to.y, angle: 0, duration });
   }
 
   private layoutPlaced() {
@@ -177,19 +219,21 @@ export class Beaver extends Phaser.Scene {
   }
 
   tap(k: Plank) {
-    if (this.busy) return;
+    if (this.busy || k.fixed) return;
     sfx('click');
     if (k.placed) {
       // Take it back to the bank; the rest close up.
       k.placed = false;
       this.placed = this.placed.filter(x => x !== k);
-      this.tweens.add({ targets: k.c, x: this.pileX(k.slot), y: PILE_Y, duration: 260 });
+      this.toPile(k);
       this.layoutPlaced();
       return;
     }
     const gap = this.units(this.r.gap), have = this.filled(), add = this.units(k.p);
     if (have + add > gap) { this.tooLong(k, gap - have); return; }
+    if (this.level.missing && have + add < gap) { this.tooShort(k, gap - have); return; }
     k.placed = true;
+    this.showLong(k, true);
     this.placed.push(k);
     this.layoutPlaced();
     if (have + add === gap) {
@@ -198,20 +242,39 @@ export class Beaver extends Phaser.Scene {
     }
   }
 
+  private leftFrac(leftUnits: number) {
+    const g = gcd(leftUnits, this.L) || 1;
+    return { n: leftUnits / g, d: this.L / g };
+  }
+
   /** It sticks out over the water, turns red and goes back. */
   private tooLong(k: Plank, leftUnits: number) {
     this.busy = true;
     const w = this.value(k.p) * U;
     const x = GAP_X + (this.filled() / this.L) * U + w / 2;
-    const left = { n: leftUnits, d: this.L };
-    const g = gcd(left.n, left.d) || 1;
-    const leftFr = { n: left.n / g, d: left.d / g };
+    const left = this.leftFrac(leftUnits);
+    this.showLong(k, true);
     this.tweens.add({ targets: k.c, x, y: DECK_Y + PLANK_H / 2 - 30, angle: -6, duration: 260 });
-    (k.c.list[0] as Phaser.GameObjects.Graphics).setAlpha(0.7);
-    this.mistake(beaverTooLong(leftFr, k.p), [beaverTooLong(leftFr, k.p, true)]);
+    k.long.setAlpha(0.7);
+    this.mistake(beaverTooLong(left, k.p), [beaverTooLong(left, k.p, true)]);
     this.time.delayedCall(1100, () => {
-      (k.c.list[0] as Phaser.GameObjects.Graphics).setAlpha(1);
-      this.tweens.add({ targets: k.c, x: this.pileX(k.slot), y: PILE_Y, angle: 0, duration: 300 });
+      k.long.setAlpha(1);
+      this.toPile(k, 300);
+      this.busy = false;
+    });
+  }
+
+  /** Only one plank may close the rest: a shorter one lies in the hole, leaving a slit, and goes back. */
+  private tooShort(k: Plank, leftUnits: number) {
+    this.busy = true;
+    const w = this.value(k.p) * U;
+    const x = GAP_X + (this.filled() / this.L) * U + w / 2;
+    const left = this.leftFrac(leftUnits);
+    this.showLong(k, true);
+    this.tweens.add({ targets: k.c, x, y: DECK_Y + PLANK_H / 2, duration: 260 });
+    this.mistake(beaverTooShort(left, k.p), [beaverTooShort(left, k.p, true)]);
+    this.time.delayedCall(1500, () => {
+      this.toPile(k, 300);
       this.busy = false;
     });
   }
@@ -227,14 +290,26 @@ export class Beaver extends Phaser.Scene {
     this.L = this.r.planks.reduce((a, p) => lcm(a, p.d), this.r.gap.d);
     this.planks = [];
     this.r.planks.forEach((p, i) => this.planks.push(this.makePlank(p, i)));
-    this.planks.forEach(k => k.c.setPosition(this.pileX(k.slot), PILE_Y));
+    this.planks.forEach(k => { const at = this.pilePos(k.slot); k.c.setPosition(at.x, at.y); });
+    // Bruno's own planks are already in the hole.
+    let x = GAP_X;
+    for (const p of this.r.laid ?? []) {
+      const k = this.makePlank(p, -1, true);
+      const w = this.value(p) * U;
+      k.c.setPosition(x + w / 2, DECK_Y + PLANK_H / 2);
+      x += w;
+      this.planks.push(k);
+      this.placed.push(k);
+    }
     this.drawBridge();
     this.setMood('normal');
     this.next.setVisible(false);
-    const ask = beaverAsk(this.r.gap);
+    const ask = this.level.missing ? beaverAskMissing(this.r.laid ?? []) : beaverAsk(this.r.gap);
     this.say(ask);
     speak(ask);
-    this.guide.say('Нажимай на доски: они лягут в дыру. Нажми на доску в мосту — она вернётся.');
+    this.guide.say(this.level.missing ? 'Нажми на бирку той доски, которая закроет дыру ровно.'
+      : this.level.stacked ? 'Нажми на бирку — доска ляжет в дыру. Нажми на доску в мосту — она вернётся в штабель.'
+      : 'Нажимай на доски: они лягут в дыру. Нажми на доску в мосту — она вернётся.');
     this.busy = false;
   }
 

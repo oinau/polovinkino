@@ -499,12 +499,18 @@ export interface BeaverRound {
   planks: Frac[];
   /** Divisions drawn under the hole; 0 means none. */
   marks: number;
+  /** Planks Bruno has already laid in the hole; they stay put. */
+  laid?: Frac[];
 }
 
 export interface BeaverLevel {
   name: string;
   intro: string;
   rounds: BeaverRound[];
+  /** Planks lie in a stack, ends out: only their tags show until a plank is laid in the bridge. */
+  stacked?: boolean;
+  /** Bruno asks what is missing: one plank must close the rest of the hole exactly. */
+  missing?: boolean;
 }
 
 const ONE = f(1, 1);
@@ -533,7 +539,8 @@ export const BEAVER_LEVELS: BeaverLevel[] = [
   },
   {
     name: 'Мало досок',
-    intro: 'Досок осталось мало, и делений на мосту нет. Выбери те, что закроют дыру ровно.',
+    intro: 'Досок осталось мало, и делений на мосту нет. А ещё доски сложены в штабель: видно только бирки с длиной. Выбери по биркам те, что закроют дыру ровно.',
+    stacked: true,
     rounds: [
       { gap: ONE, planks: [f(1, 2), f(1, 3), f(1, 6), f(1, 4)], marks: 0 },
       { gap: ONE, planks: [f(1, 3), f(1, 4), f(1, 2), f(1, 4)], marks: 0 },
@@ -542,11 +549,25 @@ export const BEAVER_LEVELS: BeaverLevel[] = [
   },
   {
     name: 'Дыра поменьше',
-    intro: 'Эти дыры меньше целой доски. Сначала посмотри, какой длины дыра.',
+    intro: 'Эти дыры меньше целой доски. Сначала посмотри, какой длины дыра. Доски всё ещё в штабеле — смотри на бирки.',
+    stacked: true,
     rounds: [
       { gap: f(3, 4), planks: [f(1, 2), f(1, 4), f(1, 4), f(1, 3)], marks: 0 },
       { gap: f(2, 3), planks: [f(1, 3), f(1, 6), f(1, 6), f(1, 2)], marks: 0 },
       { gap: f(5, 6), planks: [f(1, 2), f(1, 3), f(1, 6), f(1, 4)], marks: 0 },
+    ],
+  },
+  {
+    name: 'Сколько не хватает?',
+    intro: 'Бруно уже положил несколько досок. Сколько ещё не хватает до целой? Выбери в штабеле одну доску, которая закроет дыру ровно.',
+    stacked: true,
+    missing: true,
+    // In each stack: one plank too short, one just right, one too long.
+    rounds: [
+      { gap: ONE, laid: [f(1, 2), f(1, 4)], planks: [f(1, 6), f(1, 4), f(1, 3)], marks: 0 },
+      { gap: ONE, laid: [f(1, 2), f(1, 6)], planks: [f(1, 2), f(1, 4), f(1, 3)], marks: 0 },
+      { gap: ONE, laid: [f(1, 3)], planks: [f(2, 3), f(3, 4), f(1, 2)], marks: 0 },
+      { gap: ONE, laid: [f(1, 4), f(1, 4), f(1, 6)], planks: [f(1, 4), f(1, 2), f(1, 3)], marks: 0 },
     ],
   },
 ];

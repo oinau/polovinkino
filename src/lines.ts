@@ -499,6 +499,19 @@ export function beaverTooLong(left: Frac, plank: Frac, spoken = false): string {
   return `Не влезает! Осталось ${fr(left)}, а доска ${fr(plank)} — длиннее.`;
 }
 
+/** The plank is shorter than what is left: a slit stays open (only one plank may close it). */
+export function beaverTooShort(left: Frac, plank: Frac, spoken = false): string {
+  const fr = (x: Frac) => (spoken ? words(x) : str(x));
+  return `Мало! Не хватало ${fr(left)}, а доска ${fr(plank)} — короче. Осталась щель.`;
+}
+
+/** «Я уже положил половину и одну четвёртую…» */
+export function beaverAskMissing(laid: Frac[]): string {
+  const list = laid.map(p => words(p, 'acc'));
+  const said = list.length > 1 ? `${list.slice(0, -1).join(', ')} и ${list[list.length - 1]}` : list[0];
+  return `Я уже положил ${said}. Сколько ещё не хватает? Дай одну доску!`;
+}
+
 export const beaverAsk = (gap: Frac) =>
   gap.n === gap.d ? 'Закрой дыру длиной в одну целую доску.' : `Дыра длиной ${words(gap)} доски. Закрой её ровно.`;
 

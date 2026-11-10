@@ -15,21 +15,21 @@ async function begin(page: Page, level: number) {
   await until(page, '!s.busy');
 }
 
-/** Find planks that close the gap exactly (subset sum in twelfths) and tap them. */
+/** Find planks that close the rest of the gap exactly (subset sum in twelfths) and tap them. */
 const SOLVE = `
-  const u = p => p.n * 12 / p.d, target = u(s.r.gap);
+  const u = p => p.n * 12 / p.d, target = u(s.r.gap) - (s.r.laid ?? []).reduce((a, p) => a + u(p), 0);
   let found = null;
   const go = (i, sum, used) => {
     if (found || sum > target) return;
     if (sum === target) { found = used; return; }
     if (i >= s.planks.length) return;
-    go(i + 1, sum + u(s.planks[i].p), [...used, s.planks[i]]);
+    if (!s.planks[i].fixed) go(i + 1, sum + u(s.planks[i].p), [...used, s.planks[i]]);
     go(i + 1, sum, used);
   };
   go(0, 0, []);
   found.forEach(k => s.tap(k));`;
 
-for (const [level, rounds] of [[0, 4], [1, 4], [2, 3], [3, 3]] as const) {
+for (const [level, rounds] of [[0, 4], [1, 4], [2, 3], [3, 3], [4, 4]] as const) {
   test(`beaver level ${level + 1}: the bridge mended → 3 stars`, async ({ page }) => {
     const errors = await openGame(page, { met: ALL_HEROES });
     await begin(page, level);
@@ -64,5 +64,32 @@ test('a plank in the bridge goes back to the bank when tapped', async ({ page })
   await begin(page, 0);
   await bvr(page, 's.tap(s.planks[0]); s.tap(s.planks[1]); s.tap(s.planks[0]);');
   expect(await bvr(page, 'return [s.placed.length, s.planks[0].placed, s.filled()];')).toEqual([1, false, 1]);
+  await noErrors(errors);
+});
+
+test('stacked planks show only their tags until laid in the bridge', async ({ page }) => {
+  const errors = await openGame(page, { met: ALL_HEROES });
+  await begin(page, 2);
+  const shown = () => bvr(page, 'const k = s.planks[0]; return [k.long.visible, k.end.visible];');
+  expect(await shown()).toEqual([false, true]);
+  await bvr(page, 's.tap(s.planks[0]);');
+  expect(await shown()).toEqual([true, false]);
+  await bvr(page, 's.tap(s.planks[0]);');
+  expect(await shown()).toEqual([false, true]);
+  await noErrors(errors);
+});
+
+test('what is missing: a shorter plank leaves a slit and goes back to the stack', async ({ page }) => {
+  const errors = await openGame(page, { met: ALL_HEROES });
+  await begin(page, 4);
+  // Round 1: Bruno laid 1/2 and 1/4; the stack has 1/6, 1/4, 1/3.
+  expect(await bvr(page, 'return s.bubble.list.at(-1).text;')).toContain('половину и одну четвёртую');
+  await bvr(page, 's.tap(s.planks.find(k => !k.fixed && k.p.d === 6));');
+  expect(await bvr(page, 'return [s.mistakes, s.placed.length];')).toEqual([1, 2]);
+  expect(await bvr(page, 'return s.guide.pillText.text.replace(/\\u00A0/g, " ");')).toContain('Не хватало 1/4, а доска 1/6');
+  await until(page, '!s.busy');
+  await bvr(page, 's.tap(s.planks.find(k => !k.fixed && k.p.d === 4));');
+  await until(page, 's.next.visible');
+  expect(await bvr(page, 'return s.guide.pillText.text;')).toContain('1/2 + 1/4 + 1/4');
   await noErrors(errors);
 });
