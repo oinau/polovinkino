@@ -167,7 +167,9 @@ export class Potion extends Phaser.Scene {
     g.fillStyle(C.mustardDark).fillRoundedRect(-22, -212, 44, 24, 6).lineStyle(4, C.navy).strokeRoundedRect(-22, -212, 44, 24, 6);
     // The name goes on the floor in front of the table, clear of its edge.
     c.add([g, wrapLabel(this, 0, FLOOR - TABLE_Y + 48, INGREDIENT[id].name, 140, 22, 900)]);
-    c.setSize(130, 230).setInteractive({ hitArea: new Phaser.Geom.Rectangle(-65, -215, 130, 360), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
+    // A container's hit area is measured from its top-left corner (centre minus half the size), not from its centre:
+    // this one covers x -65..65 and y -215..145 around the bottle's foot, from the cap to the name on the floor.
+    c.setSize(130, 230).setInteractive({ hitArea: new Phaser.Geom.Rectangle(0, -100, 130, 360), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
     c.on('pointerup', () => this.pour(id));
     return c;
   }

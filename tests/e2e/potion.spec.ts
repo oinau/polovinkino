@@ -70,3 +70,23 @@ test('adding the denominators too gets its own hint', async ({ page }) => {
   expect(await pot(page, "return s.buttons.find(b => b.text.text === '3/8').enabled;")).toBe(false);
   await noErrors(errors);
 });
+
+/** Game coordinates to page coordinates: the camera keeps the stage centred. */
+async function click(page: Page, x: number, y: number) {
+  const box = (await page.locator('canvas').boundingBox())!;
+  const p = await pot(page, `const c = s.cameras.main; return [(${x} - c.worldView.x) / c.worldView.width, (${y} - c.worldView.y) / c.worldView.height];`) as number[];
+  await page.mouse.click(box.x + p[0] * box.width, box.y + p[1] * box.height);
+}
+
+test('a click anywhere on a bottle pours that bottle, not its neighbour', async ({ page }) => {
+  const errors = await openGame(page, { met: ALL_HEROES });
+  await begin(page, 0);
+  // The second bottle (moon dew): its right edge, its left edge and its neck.
+  const b = await pot(page, 'const c = s.bottles[1]; return [c.x, c.y];') as number[];
+  for (const [dx, dy] of [[40, -60], [-40, -60], [0, -180]]) {
+    await click(page, b[0] + dx, b[1] + dy);
+    await until(page, `s.layers.at(-1)?.id === 'moon'`);
+    await pot(page, 's.layers = []; s.poured = {};');
+  }
+  await noErrors(errors);
+});
