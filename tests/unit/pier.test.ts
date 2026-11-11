@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PIER_LEVELS, pierNumbers } from '../../src/levels';
-import { coinsWord, pierAsk, pierExplain, pilesWord } from '../../src/lines';
+import { coinsWord, pierAsk, pierExplain, pierGivenNote, pilesWord } from '../../src/lines';
 
 const sp = (s: string) => s.replace(/\u00A0/g, ' ');
 const rounds = PIER_LEVELS.flatMap((lv, i) => lv.rounds.map((r, k) => ({ r, where: `level ${i + 1} round ${k + 1}` })));
@@ -14,15 +14,15 @@ describe('pier rounds', () => {
     expect(r.frac.d).toBeGreaterThanOrEqual(2);
     expect(r.frac.d).toBeLessThanOrEqual(6);
     expect(r.frac.n).toBeLessThan(r.frac.d);
-    if (r.kind !== 'deal') {
+    if (r.kind === 'whole') {
       expect(r.options).toContain(answer);
       expect(new Set(r.options).size).toBe(r.options.length);
     }
-    if (r.kind === 'whole') expect(r.frac.n, 'one pile is known').toBe(1);
   });
 
   it('numbers are right', () => {
-    expect(pierNumbers({ kind: 'deal', who: 'kok', total: 12, frac: { n: 2, d: 3 } })).toEqual({ total: 12, pile: 4, answer: 8 });
+    expect(pierNumbers({ kind: 'give', who: 'kok', total: 12, frac: { n: 2, d: 3 } })).toEqual({ total: 12, pile: 4, answer: 8 });
+    expect(pierNumbers({ kind: 'whole', who: 'kok', part: 8, frac: { n: 2, d: 3 }, options: [] })).toEqual({ total: 12, pile: 4, answer: 12 });
     expect(pierNumbers({ kind: 'whole', who: 'kok', part: 4, frac: { n: 1, d: 3 }, options: [] })).toEqual({ total: 12, pile: 4, answer: 12 });
   });
 });
@@ -36,20 +36,23 @@ describe('pier lines', () => {
   });
 
   it('say numbers in words, agreeing in gender', () => {
-    expect(sp(pierExplain({ kind: 'deal', who: 'kok', total: 6, frac: { n: 1, d: 2 } }, true)))
+    expect(sp(pierExplain({ kind: 'give', who: 'kok', total: 6, frac: { n: 1, d: 2 } }, true)))
       .toBe('Шесть монет на две кучки — по три. Половина — это одна кучка, три монеты.');
     expect(sp(pierExplain({ kind: 'whole', who: 'kok', part: 5, frac: { n: 1, d: 2 }, options: [] }, true)))
       .toBe('Половина — это одна кучка, а всего кучек две. Две кучки по пять — это десять монет.');
   });
 
   it('ask and explain', () => {
-    expect(sp(pierAsk({ kind: 'deal', who: 'kok', total: 12, frac: { n: 2, d: 3 } }))).toBe('Отдай коку две третьих клада!');
-    expect(sp(pierAsk({ kind: 'deal', who: 'rumb', total: 8, frac: { n: 1, d: 4 } }))).toBe('Отдай попугаю Румбу одну четвёртую клада!');
+    expect(sp(pierAsk({ kind: 'give', who: 'kok', total: 12, frac: { n: 2, d: 3 } }))).toBe('Отдай коку две третьих клада!');
+    expect(sp(pierAsk({ kind: 'give', who: 'rumb', total: 8, frac: { n: 1, d: 4 } }))).toBe('Отдай попугаю Румбу одну четвёртую клада!');
     expect(sp(pierAsk({ kind: 'whole', who: 'kok', part: 5, frac: { n: 1, d: 2 }, options: [] })))
       .toBe('Кок получил половину клада — 5 монет. Сколько монет было в сундуке?');
-    expect(sp(pierExplain({ kind: 'deal', who: 'kok', total: 12, frac: { n: 2, d: 3 } }, true)))
+    expect(sp(pierExplain({ kind: 'give', who: 'kok', total: 12, frac: { n: 2, d: 3 } }, true)))
       .toBe('Двенадцать монет на три кучки — по четыре. Две третьих — это две кучки, восемь монет.');
     expect(sp(pierExplain({ kind: 'whole', who: 'kok', part: 4, frac: { n: 1, d: 3 }, options: [] })))
       .toBe('1/3 — это одна кучка, а всего кучек 3. 3 кучки по 4 — это 12 монет.');
+    expect(sp(pierExplain({ kind: 'whole', who: 'kok', part: 8, frac: { n: 2, d: 3 }, options: [] })))
+      .toBe('2/3 — это 2 кучки, 8 монет: по 4 в кучке. А всего кучек 3. 3 кучки по 4 — это 12 монет.');
+    expect(sp(pierGivenNote(4))).toBe('А в мешке — 4 монеты.');
   });
 });

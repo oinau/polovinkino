@@ -16,20 +16,19 @@ async function begin(page: Page, level: number) {
   await pier(page, 's.startRound();');
 }
 
-/** Deal every coin in turn: one into each pile. */
-const dealEvenly = (page: Page) =>
-  pier(page, 'const d = s.r.frac.d, n = s.chest.length; for (let i = 0; i < n; i++) s.tapTray(s.trays[i % d]);');
+/** Put the right share into the sack and press «Отдать». */
+const giveRight = (page: Page) =>
+  pier(page, 'const n = s.r.total / s.r.frac.d * s.r.frac.n; for (let i = 0; i < n; i++) s.tapChest(); s.giveAway();');
 
 async function playRound(page: Page) {
   const kind = await pier(page, 'return s.r.kind;');
-  if (kind === 'deal') {
-    await dealEvenly(page);
-    await waitPhase(page, 'pick');
-    await pier(page, 'for (let i = 0; i < s.r.frac.n; i++) s.tapTray(s.trays[i]); s.giveAway();');
+  if (kind === 'give') {
+    await waitPhase(page, 'give');
+    await giveRight(page);
   } else {
     await waitPhase(page, 'answer');
     await pier(page, `
-      const r = s.r, answer = r.kind === 'whole' ? r.part * r.frac.d : (r.total / r.frac.d) * r.frac.n;
+      const r = s.r, answer = r.part / r.frac.n * r.frac.d;
       s.pickNumber(answer, s.buttons.find(b => b.text.text === String(answer)));`);
   }
   await expect.poll(() => pier(page, 'return s.next.visible;'), { timeout: 60000 }).toBe(true);
@@ -46,42 +45,45 @@ for (const level of [0, 1, 2]) {
   });
 }
 
-test('an uneven deal is a mistake and the coins go back to the chest', async ({ page }) => {
+test('«Отдать» with an empty sack is not a mistake: Rumb says what to do', async ({ page }) => {
   const errors = await openGame(page, { met: ALL_HEROES });
   await begin(page, 0);
-  // Round 1: half of 6 coins. Four in the first pile, two in the second.
-  await pier(page, 'for (let i = 0; i < 4; i++) s.tapTray(s.trays[0]); s.tapTray(s.trays[1]); s.tapTray(s.trays[1]);');
-  await expect.poll(() => pier(page, 'return s.mistakes;'), { timeout: 60000 }).toBe(1);
-  await waitPhase(page, 'deal');
-  expect(await pier(page, 'return [s.chest.length, s.assist];')).toEqual([6, true]);
+  await waitPhase(page, 'give');
+  await pier(page, 's.giveAway();');
+  expect(await pier(page, 'return [s.mistakes, s.phase, s.bubbles[1].list.at(-1).text];')).toEqual([0, 'give', 'Кррра! Мешок пустой! Нажимай на сундук — монеты полетят в мешок.']);
+  // A coin in and back out again: the sack is empty once more.
+  await pier(page, 's.tapChest(); s.tapChest(); s.tapSack();');
+  expect(await pier(page, 'return [s.given, s.chest.length, s.sackCount.text];')).toEqual([1, 5, '+1']);
   await noErrors(errors);
 });
 
-test('giving the wrong number of piles is explained and can be fixed', async ({ page }) => {
+test('a wrong sack shows the fair piles, then the coins go back to the chest', async ({ page }) => {
   const errors = await openGame(page, { met: ALL_HEROES });
   await begin(page, 1);
-  // Round 1: two thirds of 9. Give all three piles.
-  await dealEvenly(page);
-  await waitPhase(page, 'pick');
-  await pier(page, 's.trays.forEach(t => s.tapTray(t)); s.giveAway();');
-  expect(await pier(page, 'return [s.mistakes, s.phase, s.trays.some(t => t.selected)];')).toEqual([1, 'pick', false]);
-  expect(await pier(page, 'return s.guide.pillText.text;')).toContain('2 кучки из 3');
-  await pier(page, 's.tapTray(s.trays[0]); s.tapTray(s.trays[2]); s.giveAway();');
+  // Round 1: two thirds of 9. Give 4.
+  await waitPhase(page, 'give');
+  await pier(page, 'for (let i = 0; i < 4; i++) s.tapChest(); s.giveAway();');
+  await expect.poll(() => pier(page, 'return s.mistakes;'), { timeout: 60000 }).toBe(1);
+  expect(await pier(page, 'return [s.trays.map(t => t.coins.length), s.trays.map(t => t.selected)];')).toEqual([[3, 3, 3], [true, true, false]]);
+  expect(await pier(page, 'return s.guide.pillText.text.replace(/\\u00A0/g, " ");')).toContain('2/3 — это 2 кучки, 6 монет. А в мешке — 4 монеты.');
+  await waitPhase(page, 'give');
+  expect(await pier(page, 'return [s.chest.length, s.given, s.trays.length];')).toEqual([9, 0, 0]);
+  await giveRight(page);
   await expect.poll(() => pier(page, 'return s.next.visible;'), { timeout: 60000 }).toBe(true);
-  expect(await pier(page, 'return s.coins;')).toBe(1);
+  expect(await pier(page, 'return [s.coins, s.given];')).toEqual([1, 6]);
   await noErrors(errors);
 });
 
 test('a wrong number shows the piles, then that answer is locked', async ({ page }) => {
   const errors = await openGame(page, { met: ALL_HEROES });
   await begin(page, 2);
-  // Round 1: a third of 12. Answer 6.
+  // Round 1: a third is 4 coins. Answer 8.
   await waitPhase(page, 'answer');
-  await pier(page, "s.pickNumber(6, s.buttons.find(b => b.text.text === '6'));");
+  await pier(page, "s.pickNumber(8, s.buttons.find(b => b.text.text === '8'));");
   await expect.poll(() => pier(page, 'return s.mistakes;'), { timeout: 60000 }).toBe(1);
   expect(await pier(page, 'return s.trays.map(t => t.coins.length);')).toEqual([4, 4, 4]);
   await waitPhase(page, 'answer');
-  expect(await pier(page, "return s.buttons.map(b => [b.text.text, b.enabled]).sort();")).toEqual([['3', true], ['4', true], ['6', false]]);
-  expect(await pier(page, 'return s.chest.length;')).toBe(12);
+  expect(await pier(page, "return s.buttons.map(b => [b.text.text, b.enabled]).sort();")).toEqual([['12', true], ['7', true], ['8', false]]);
+  expect(await pier(page, 'return s.trays.every(t => t.ghost && !t.coins.length);')).toBe(true);
   await noErrors(errors);
 });

@@ -3,7 +3,7 @@ import { C, HEX, W, H, BLEED } from '../theme';
 import { PIER_LEVELS, pierNumbers, type PierLevel, type PierRound } from '../levels';
 import type { Mood } from '../art';
 import { sfx, speak, speakSeq } from '../audio';
-import { CREW, HEROES, PIER_LINES, PIER_NOTES, coinsWord, pierAsk, pierExplain, pierPickHint } from '../lines';
+import { CREW, HEROES, PIER_LINES, PIER_NOTES, coinsWord, pierAsk, pierExplain, pierGivenNote } from '../lines';
 import { store } from '../store';
 import {
   Bubble, Button, FractionView, Guide, coinsBurst, label, meetCard, modal, nameTag, resultModal, starsFor, topBar, wrapLabel,
@@ -16,21 +16,21 @@ const SACK = { x: 1640, y: 1000 };
 const PARROT = { x: 1820, y: 1010 };
 const BTN_Y = 1000;
 const COIN_R = 20;
-/** A pile never needs more: totals are at most 12 and there are at least 2 piles. */
-const PILE_MAX = 6;
 
+/** A pile on the table: the check shows the treasure dealt into equal piles. */
 interface Tray {
   x: number;
   w: number;
   g: Phaser.GameObjects.Graphics;
-  zone: Phaser.GameObjects.Zone;
   coins: Phaser.GameObjects.Graphics[];
+  /** The piles that make the asked share. */
   selected: boolean;
   /** Dashed outline with «?»: a pile we only imagine. */
   ghost?: Phaser.GameObjects.Text;
 }
 
-type Phase = 'busy' | 'deal' | 'pick' | 'answer';
+/** give: coins go from the chest into the sack; answer: pick a number. */
+type Phase = 'busy' | 'give' | 'answer';
 
 export class Pier extends Phaser.Scene {
   private levelIndex = 0;
@@ -41,8 +41,6 @@ export class Pier extends Phaser.Scene {
   private triesOnRound = 0;
   private coins = 0;
   private phase: Phase = 'busy';
-  /** After an uneven deal the arrow helps even on levels without the guide. */
-  private assist = false;
 
   private guide!: Guide;
   private dots!: Phaser.GameObjects.Graphics;
@@ -50,6 +48,8 @@ export class Pier extends Phaser.Scene {
   private parrot!: Phaser.GameObjects.Image;
   private bubbles: Bubble[] = [];
   private chest: Phaser.GameObjects.Graphics[] = [];
+  /** Coins in the sack, hidden inside it. */
+  private sackCoins: Phaser.GameObjects.Graphics[] = [];
   private chestLabel!: Phaser.GameObjects.Text;
   private trays: Tray[] = [];
   private flying: Phaser.GameObjects.Graphics[] = [];
@@ -72,6 +72,7 @@ export class Pier extends Phaser.Scene {
     this.coins = 0;
     this.bubbles = [];
     this.chest = [];
+    this.sackCoins = [];
     this.trays = [];
     this.flying = [];
     this.buttons = [];
@@ -101,6 +102,7 @@ export class Pier extends Phaser.Scene {
     this.drawSack();
 
     this.guide = new Guide(this, 150);
+    // Always pressable: if it is too early, Rumb says what to do.
     this.give = new Button(this, TABLE.x + TABLE.w / 2, BTN_Y, 'Отдать', () => this.giveAway(), { w: 300, h: 96, fill: C.olive, color: HEX.paper });
     this.give.setVisible(false);
     this.next = new Button(this, TABLE.x + TABLE.w / 2, BTN_Y, 'Дальше →', () => this.nextRound(), { w: 360, h: 96, fill: C.olive, color: HEX.paper });
@@ -140,6 +142,9 @@ export class Pier extends Phaser.Scene {
     g.lineStyle(4, C.navy).lineBetween(x - 170, y + 30, x + 170, y + 30);
     g.fillStyle(C.mustard).fillRect(x - 20, y + 18, 40, 30).lineStyle(4, C.navy).strokeRect(x - 20, y + 18, 40, 30);
     this.chestLabel = label(this, x, y + 120, '', 34, HEX.navy, 900);
+    // Each tap moves one coin into the sack.
+    const zone = this.add.zone(x, y - 45, 360, 270).setInteractive({ useHandCursor: true });
+    zone.on('pointerup', () => this.tapChest());
   }
 
   private drawSack() {
@@ -149,6 +154,9 @@ export class Pier extends Phaser.Scene {
     g.fillStyle(C.floor).fillTriangle(x - 40, y - 175, x + 40, y - 175, x, y - 135).lineStyle(5, C.navy).strokeTriangle(x - 40, y - 175, x + 40, y - 175, x, y - 135);
     g.lineStyle(7, C.terra).lineBetween(x - 26, y - 140, x + 26, y - 140);
     this.sackCount = label(this, x, y - 66, '', 42, HEX.navy, 900);
+    // A tap takes one coin back to the chest.
+    const zone = this.add.zone(x, y - 90, 200, 190).setInteractive({ useHandCursor: true });
+    zone.on('pointerup', () => this.tapSack());
   }
 
   private drawDots() {
@@ -199,14 +207,41 @@ export class Pier extends Phaser.Scene {
     this.tweens.add({ targets: c, x: to.x, y: to.y, duration, ease: 'Cubic.Out', onComplete: onDone });
   }
 
+  private showGiven() {
+    this.sackCount.setText(this.given ? `+${this.given}` : '');
+  }
+
+  tapChest() {
+    if (this.phase !== 'give') return;
+    const c = this.chest.pop();
+    if (!c) return;
+    sfx('click');
+    this.guide.hideArrow();
+    this.sackCoins.push(c);
+    this.given++;
+    this.showGiven();
+    this.fly(c, { x: SACK.x, y: SACK.y - 80 }, 300, () => { if (this.sackCoins.includes(c)) c.setVisible(false); });
+  }
+
+  tapSack() {
+    if (this.phase !== 'give') return;
+    const c = this.sackCoins.pop();
+    if (!c) return;
+    sfx('click');
+    this.given--;
+    this.showGiven();
+    this.tweens.killTweensOf(c);
+    c.setVisible(true).setPosition(SACK.x, SACK.y - 80);
+    this.fly(c, this.chestSlot(this.chest.length), 300);
+    this.chest.push(c);
+  }
+
   // ---------- piles ----------
   private makeTrays(d: number, ghosts = false) {
     const step = TABLE.w / d;
     for (let i = 0; i < d; i++) {
       const x = TABLE.x + step * (i + 0.5), w = Math.min(170, step - 18);
-      const zone = this.add.zone(x, TABLE.y, w, 200).setInteractive({ useHandCursor: true });
-      const t: Tray = { x, w, g: this.add.graphics(), zone, coins: [], selected: false };
-      zone.on('pointerup', () => this.tapTray(t));
+      const t: Tray = { x, w, g: this.add.graphics(), coins: [], selected: false };
       this.trays.push(t);
       this.setGhost(t, ghosts);
     }
@@ -240,16 +275,14 @@ export class Pier extends Phaser.Scene {
     this.fly(c, p, duration);
   }
 
-  /** The tray with the fewest coins: where the next coin goes when dealing in turn. */
-  private nextTray() {
-    return this.trays.reduce((a, t) => (t.coins.length < a.coins.length ? t : a));
+  /** The asked share: the first `frac.n` piles light up. */
+  private markShare() {
+    for (const t of this.trays.slice(0, this.r.frac.n)) { t.selected = true; this.drawTray(t); }
   }
 
-  private pointNext() {
-    if ((this.level.guide || this.assist) && this.phase === 'deal' && this.chest.length) {
-      const t = this.nextTray();
-      this.guide.point(t.x, TABLE.y - 112, 'top');
-    } else this.guide.hideArrow();
+  private clearTrays() {
+    for (const t of this.trays) { t.g.destroy(); t.ghost?.destroy(); }
+    this.trays = [];
   }
 
   // ---------- rounds ----------
@@ -257,9 +290,8 @@ export class Pier extends Phaser.Scene {
     this.r = this.level.rounds[this.roundIndex];
     // Nothing from the previous round may still land on the table.
     this.time.removeAllEvents();
-    this.tweens.killTweensOf([...this.chest, ...this.flying, ...this.trays.flatMap(t => t.coins)]);
+    this.tweens.killTweensOf([...this.chest, ...this.sackCoins, ...this.flying, ...this.trays.flatMap(t => t.coins)]);
     this.triesOnRound = 0;
-    this.assist = false;
     this.clearTable();
     this.setMood('normal');
     this.clearBubbles();
@@ -267,38 +299,28 @@ export class Pier extends Phaser.Scene {
     this.sackTag?.destroy();
     this.sackTag = nameTag(this, SACK.x, SACK.y - 210, CREW[this.r.who].name);
     this.given = 0;
-    this.sackCount.setText('');
+    this.showGiven();
 
     const r = this.r, ask = pierAsk(r);
     const b = new Bubble(this, 660, 330, 700, 250, { x: CAPTAIN.x + 70 - 660, y: CAPTAIN.y - this.captain.displayHeight + 60 - 330 });
-    b.add(wrapLabel(this, 0, -58, ask, 640, r.kind === 'deal' ? 36 : 30, 800));
+    b.add(wrapLabel(this, 0, -58, ask, 640, r.kind === 'give' ? 36 : 30, 800));
     b.add(new FractionView(this, 0, 64, r.frac.n, r.frac.d, 42));
     b.pop();
     this.bubbles.push(b);
     speak(ask);
 
-    if (r.kind === 'deal') {
+    if (r.kind === 'give') {
       this.fillChest(r.total);
       this.chestLabel.setText(coinsWord(r.total));
-      this.makeTrays(r.frac.d);
-      this.phase = 'deal';
-      this.guide.say(this.level.guide ? 'Нажимай на кучки по очереди: по одной монете в каждую.' : 'Разложи монеты поровну: нажимай на кучки.');
-      this.pointNext();
+      this.phase = 'give';
+      this.give.setVisible(true);
+      this.guide.say('Нажимай на сундук: монеты полетят в мешок. Лишнюю верни — нажми на мешок. Потом «Отдать».');
+      if (this.level.guide) this.pointChest();
     } else {
-      if (r.kind === 'count') {
-        this.fillChest(r.total);
-        this.chestLabel.setText(coinsWord(r.total));
-      } else {
-        this.chestLabel.setText('? монет');
-        this.makeTrays(r.frac.d, true);
-        // The one pile we know about.
-        const t = this.trays[0];
-        this.setGhost(t, false);
-        for (let i = 0; i < r.part; i++) {
-          const p = this.traySlot(t, i);
-          t.coins.push(this.coin(p.x, p.y));
-        }
-      }
+      // The share is in the sack; the chest and the piles are what we work out.
+      this.chestLabel.setText('? монет');
+      this.sackCount.setText(`+${r.part}`);
+      this.makeTrays(r.frac.d, true);
       this.phase = 'answer';
       this.guide.say('Посчитай в уме и выбери ответ.');
       const opts = Phaser.Utils.Array.Shuffle([...r.options]);
@@ -309,12 +331,16 @@ export class Pier extends Phaser.Scene {
     }
   }
 
+  private pointChest() {
+    this.guide.point(CHEST.x, CHEST.y - 190, 'top');
+  }
+
   private clearTable() {
-    for (const c of [...this.chest, ...this.flying, ...this.trays.flatMap(t => t.coins)]) c.destroy();
-    for (const t of this.trays) { t.g.destroy(); t.zone.destroy(); t.ghost?.destroy(); }
+    for (const c of [...this.chest, ...this.sackCoins, ...this.flying, ...this.trays.flatMap(t => t.coins)]) c.destroy();
+    this.clearTrays();
     this.chest = [];
+    this.sackCoins = [];
     this.flying = [];
-    this.trays = [];
     this.buttons.forEach(b => b.destroy());
     this.buttons = [];
     this.wrong.clear();
@@ -322,69 +348,49 @@ export class Pier extends Phaser.Scene {
     this.guide.hideArrow();
   }
 
-  private tapTray(t: Tray) {
-    if (this.phase === 'deal') {
-      if (!this.chest.length) return;
-      if (t.coins.length >= PILE_MAX) {
-        this.tweens.add({ targets: t.g, x: 8, duration: 50, yoyo: true, repeat: 3, onComplete: () => t.g.setX(0) });
+  giveAway() {
+    if (this.phase !== 'give') return;
+    if (!this.given) {
+      // Not a mistake: Rumb says what to do and the arrow shows where.
+      sfx('click');
+      this.parrotSays(PIER_LINES.empty);
+      speak(PIER_LINES.empty);
+      this.pointChest();
+      return;
+    }
+    this.phase = 'busy';
+    this.give.setVisible(false);
+    this.check();
+  }
+
+  /** The whole treasure is dealt into equal piles; the asked piles light up and are compared with the sack. */
+  private check() {
+    const r = this.r, given = this.given, { answer } = pierNumbers(r);
+    this.tweens.killTweensOf([...this.sackCoins, ...this.chest]);
+    const coins = [...this.sackCoins.splice(0).map(c => c.setVisible(true).setPosition(SACK.x, SACK.y - 80)), ...this.chest.splice(0).reverse()];
+    this.makeTrays(r.frac.d);
+    coins.forEach((c, i) => this.time.delayedCall(i * 110, () => this.putInTray(this.trays[i % r.frac.d], c, 220)));
+    this.time.delayedCall(coins.length * 110 + 350, () => {
+      this.markShare();
+      if (given === answer) {
+        this.given = 0;
+        this.toSack(this.trays.filter(t => t.selected), () => this.success());
         return;
       }
-      sfx('click');
-      this.putInTray(t, this.chest.pop()!);
-      if (this.chest.length) this.pointNext();
-      else {
-        this.phase = 'busy';
-        this.guide.hideArrow();
-        this.time.delayedCall(450, () => this.checkDeal());
-      }
-    } else if (this.phase === 'pick') {
-      sfx('click');
-      t.selected = !t.selected;
-      this.drawTray(t);
-      this.give.setEnabled(this.trays.some(x => x.selected));
-    }
-  }
-
-  private checkDeal() {
-    const sizes = this.trays.map(t => t.coins.length);
-    if (sizes.every(s => s === sizes[0])) {
-      this.phase = 'pick';
-      sfx('good');
-      this.guide.say(this.level.guide ? pierPickHint(this.r) : `По ${sizes[0]} в каждой кучке! Выбери, сколько кучек отдать, и нажми «Отдать».`);
-      this.give.setVisible(true).setEnabled(false);
-      return;
-    }
-    this.mistake(PIER_LINES.unevenHint, [PIER_LINES.uneven, PIER_LINES.unevenHint]);
-    this.parrotSays(PIER_LINES.uneven);
-    this.assist = true;
-    this.time.delayedCall(1800, () => {
-      // Everything back into the chest, deal again.
-      const all = this.trays.flatMap(t => t.coins.splice(0));
-      all.forEach((c, i) => {
-        const p = this.chestSlot(i);
-        this.chest.push(c);
-        this.fly(c, p, 320);
+      const few = given < answer;
+      this.mistake(`${pierExplain(r)} ${pierGivenNote(given)}`, [few ? PIER_LINES.few : PIER_LINES.many, pierExplain(r, true)]);
+      if (few) this.captainSays(PIER_LINES.few); else this.parrotSays(PIER_LINES.many);
+      this.time.delayedCall(4000, () => {
+        // Everything back into the chest: try again.
+        const all = this.trays.flatMap(t => t.coins.splice(0));
+        this.clearTrays();
+        all.forEach((c, i) => { this.chest.push(c); this.fly(c, this.chestSlot(i), 300); });
+        this.given = 0;
+        this.showGiven();
+        this.give.setVisible(true);
+        this.phase = 'give';
       });
-      this.phase = 'deal';
-      this.pointNext();
     });
-  }
-
-  private giveAway() {
-    if (this.phase !== 'pick') return;
-    const picked = this.trays.filter(t => t.selected);
-    const need = this.r.frac.n;
-    if (picked.length === need) {
-      this.phase = 'busy';
-      this.give.setVisible(false);
-      this.toSack(picked, () => this.success());
-      return;
-    }
-    const few = picked.length < need;
-    this.mistake(pierPickHint(this.r), [few ? PIER_LINES.few : PIER_LINES.many]);
-    if (few) this.captainSays(PIER_LINES.few); else this.parrotSays(PIER_LINES.many);
-    for (const t of this.trays) { t.selected = false; this.drawTray(t); }
-    this.give.setEnabled(false);
   }
 
   /** Coins of the chosen piles fly into the crew member's sack. */
@@ -396,29 +402,16 @@ export class Pier extends Phaser.Scene {
         c.setVisible(false);
         sfx('coin');
         this.given++;
-        this.sackCount.setText(`+${this.given}`);
+        this.showGiven();
       }));
     });
     this.time.delayedCall(coins.length * 70 + 500, done);
   }
 
-  /** Count rounds: deal the chest out in turn so the answer is visible, then pick the piles. */
-  private dealOut(done: () => void) {
-    const r = this.r;
-    this.makeTrays(r.frac.d);
-    const coins = this.chest.splice(0).reverse();
-    coins.forEach((c, i) => this.time.delayedCall(i * 110, () => this.putInTray(this.trays[i % r.frac.d], c, 220)));
-    this.time.delayedCall(coins.length * 110 + 350, () => {
-      for (const t of this.trays.slice(0, r.frac.n)) { t.selected = true; this.drawTray(t); }
-      done();
-    });
-  }
-
-  /** Whole rounds: fill the imagined piles, each like the known one. */
+  /** Whole rounds: every imagined pile fills up like the share in the sack; the share's piles light up. */
   private fillGhosts(done: () => void) {
-    const r = this.r;
-    const pile = pierNumbers(r).pile;
-    this.trays.slice(1).forEach((t, k) => {
+    const { pile } = pierNumbers(this.r);
+    this.trays.forEach((t, k) => {
       this.time.delayedCall(k * 350, () => {
         this.setGhost(t, false);
         for (let i = 0; i < pile; i++) {
@@ -430,34 +423,24 @@ export class Pier extends Phaser.Scene {
         sfx('coin');
       });
     });
-    this.time.delayedCall((r.frac.d - 1) * 350 + 500, done);
+    this.time.delayedCall(this.trays.length * 350 + 500, () => { this.markShare(); done(); });
   }
 
-  private pickNumber(v: number, btn: Button) {
+  pickNumber(v: number, btn: Button) {
     if (this.phase !== 'answer') return;
     this.phase = 'busy';
     this.buttons.forEach(b => b.setEnabled(false));
     const r = this.r;
-    const right = v === pierNumbers(r).answer;
-    const show = (done: () => void) => (r.kind === 'whole' ? this.fillGhosts(done) : this.dealOut(done));
-    show(() => {
-      if (right) {
-        if (r.kind === 'whole') {
-          this.chestLabel.setText(coinsWord(pierNumbers(r).total));
-          this.success();
-        } else this.toSack(this.trays.filter(t => t.selected), () => this.success());
+    this.fillGhosts(() => {
+      if (v === pierNumbers(r).answer) {
+        this.chestLabel.setText(coinsWord(pierNumbers(r).total));
+        this.success();
         return;
       }
       this.mistake(pierExplain(r), [pierExplain(r, true)]);
       this.time.delayedCall(3800, () => {
-        // Put everything back and let the child answer again.
-        if (r.kind === 'whole') this.trays.slice(1).forEach(t => { t.coins.splice(0).forEach(c => c.destroy()); this.setGhost(t, true); });
-        else {
-          const all = this.trays.flatMap(t => t.coins.splice(0));
-          for (const t of this.trays) { t.g.destroy(); t.zone.destroy(); }
-          this.trays = [];
-          all.forEach((c, i) => { this.chest.push(c); this.fly(c, this.chestSlot(i), 300); });
-        }
+        // Back to imagined piles and let the child answer again.
+        for (const t of this.trays) { t.coins.splice(0).forEach(c => c.destroy()); t.selected = false; this.setGhost(t, true); }
         this.wrong.add(btn);
         this.buttons.forEach(b => b.setEnabled(!this.wrong.has(b)));
         this.phase = 'answer';

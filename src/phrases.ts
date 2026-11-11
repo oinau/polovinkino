@@ -4,7 +4,7 @@ import {
   CLOCK_ASK, CLOCK_FINALE, CLOCK_NOTES, GNOME_NOTES, HEROES, LINES, PIZZA_NOTES, REACTIONS, clockLetter, clockSetExplain,
   clockWaitAsk, clockWaitExplain, DOCTOR_LINES, DOCTOR_NOTES, PATIENTS, doctorExplain, doctorReadAsk, doctorSetAsk, doctorSortAsk,
   doctorSortExplain, explainDispute, POTION_GAGS, POTION_LINES, POTION_NOTES, potionAsk, potionDenominatorHint, potionExplain,
-  potionQuestion, COURIER_LINES, COURIER_NOTES, courierAsk, courierExplain, BEAVER_LINES, BEAVER_NOTES, beaverAsk, DIPLOMA, MONSTER_LINES, MONSTER_NOTES, monsterAsk, monsterExplain, monsterQuestion, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
+  potionQuestion, COURIER_LINES, COURIER_NOTES, courierAsk, courierExplain, BEAVER_LINES, BEAVER_NOTES, beaverAsk, beaverAskMissing, DIPLOMA, MONSTER_LINES, MONSTER_NOTES, monsterAsk, monsterExplain, monsterQuestion, gnomeClaims, orderLine, PIER_LINES, PIER_NOTES, pierAsk, pierExplain,
 } from './lines';
 import { explainTime, timeWords } from './time';
 import { capitalize } from './fractions';
@@ -110,11 +110,10 @@ export function allPhrases(): Phrase[] {
     for (const r of lv.rounds) {
       add(pierAsk(r), 'sardina', `${where}, просьба капитана`);
       add(`Верно! ${pierExplain(r, true)}`, 'narrator', `${where}, верный ответ`);
-      if (r.kind !== 'deal') add(pierExplain(r, true), 'narrator', `${where}, ошибка`);
+      add(pierExplain(r, true), 'narrator', `${where}, ошибка`);
     }
   });
-  add(PIER_LINES.uneven, 'rumb', 'Пристань, кучки разные');
-  add(PIER_LINES.unevenHint, 'narrator', 'Пристань, кучки разные');
+  add(PIER_LINES.empty, 'rumb', 'Пристань, мешок пустой');
   add(PIER_LINES.many, 'rumb', 'Пристань, отдали много');
   add(PIER_LINES.right, 'rumb', 'Пристань, верно');
   add(PIER_LINES.few, 'sardina', 'Пристань, отдали мало');
@@ -190,7 +189,7 @@ export function allPhrases(): Phrase[] {
   // The bridge: explanations depend on which planks the child picks, so only the fixed lines are listed.
   BEAVER_LEVELS.forEach((lv, i) => {
     add(lv.intro, 'narrator', `Мост бобра, уровень ${i + 1}, вступление`);
-    for (const r of lv.rounds) add(beaverAsk(r.gap), 'bruno', `Мост бобра, уровень ${i + 1}, задание`);
+    for (const r of lv.rounds) add(lv.missing ? beaverAskMissing(r.laid ?? []) : beaverAsk(r.gap), 'bruno', `Мост бобра, уровень ${i + 1}, задание`);
   });
   for (const line of Object.values(BEAVER_LINES)) add(line, 'bruno', 'Мост бобра');
   BEAVER_NOTES.slice(1).forEach(n => add(n, 'narrator', 'Мост бобра, итог'));

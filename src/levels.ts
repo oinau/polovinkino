@@ -194,53 +194,55 @@ export const CLOCK_LEVELS: ClockLevel[] = [
 export type CrewId = 'kok' | 'bocman' | 'shturman' | 'rumb';
 
 export type PierRound =
-  /** Deal the coins into equal piles, then give away `frac.n` piles of `frac.d`. */
-  | { kind: 'deal'; who: CrewId; total: number; frac: Frac }
-  /** How many coins is `frac` of `total`? */
-  | { kind: 'count'; who: CrewId; total: number; frac: Frac; options: number[] }
-  /** `frac` (one pile) was `part` coins: how many were in the chest? */
+  /** Put `frac` of `total` coins into the sack; then the treasure is dealt into equal piles to check. */
+  | { kind: 'give'; who: CrewId; total: number; frac: Frac }
+  /** `frac` of the treasure was `part` coins: how many were in the chest? */
   | { kind: 'whole'; who: CrewId; part: number; frac: Frac; options: number[] };
 
 export interface PierLevel {
   name: string;
   intro: string;
-  /** Arrow points at the next pile while dealing; the pick hint names the number of piles. */
+  /** An arrow points at the chest until the first coin is in the sack. */
   guide: boolean;
   rounds: PierRound[];
 }
 
-const deal = (who: CrewId, total: number, frac: Frac): PierRound => ({ kind: 'deal', who, total, frac });
+const give = (who: CrewId, total: number, frac: Frac): PierRound => ({ kind: 'give', who, total, frac });
+const whole = (who: CrewId, part: number, frac: Frac, options: number[]): PierRound => ({ kind: 'whole', who, part, frac, options });
 
 export const PIER_LEVELS: PierLevel[] = [
   {
     name: 'Раздели клад',
-    intro: 'Капитан Сардина привезла сундук монет. Разложи монеты в равные кучки — по одной монете в каждую по очереди — и отдай, сколько просят.',
+    intro: 'Капитан Сардина привезла сундук монет. Нажимай на сундук — монеты полетят в мешок. Положи столько, сколько просит капитан, и нажми «Отдать». А потом проверим, честно ли!',
     guide: true,
-    rounds: [deal('bocman', 6, f(1, 2)), deal('kok', 9, f(1, 3)), deal('rumb', 8, f(1, 4)), deal('shturman', 12, f(1, 3)), deal('kok', 10, f(1, 2))],
+    rounds: [give('bocman', 6, f(1, 2)), give('kok', 9, f(1, 3)), give('rumb', 8, f(1, 4)), give('shturman', 12, f(1, 3)), give('kok', 10, f(1, 2))],
   },
   {
-    name: 'Несколько кучек',
-    intro: 'Теперь просят больше одной части: две третьих — это две кучки из трёх. Раздели клад и отдай нужные кучки.',
+    name: 'Несколько частей',
+    intro: 'Теперь просят больше одной части: две третьих — это две части из трёх. Посчитай, положи в мешок и нажми «Отдать».',
     guide: false,
-    rounds: [deal('bocman', 9, f(2, 3)), deal('shturman', 8, f(3, 4)), deal('kok', 12, f(2, 3)), deal('bocman', 12, f(3, 4)), deal('rumb', 12, f(5, 6))],
+    rounds: [give('bocman', 9, f(2, 3)), give('shturman', 8, f(3, 4)), give('kok', 12, f(2, 3)), give('bocman', 12, f(3, 4)), give('rumb', 12, f(5, 6))],
   },
   {
-    name: 'В уме',
-    intro: 'Монеты раскладывать не надо: посчитай в уме и выбери ответ. А потом проверим!',
+    name: 'Сколько было?',
+    intro: 'Теперь наоборот: известно, сколько монет получил один из команды. Посчитай, сколько было в сундуке, и выбери ответ. А потом проверим!',
     guide: false,
     rounds: [
-      { kind: 'count', who: 'kok', total: 12, frac: f(1, 3), options: [3, 4, 6] },
-      { kind: 'count', who: 'rumb', total: 12, frac: f(1, 4), options: [3, 4, 8] },
-      { kind: 'count', who: 'bocman', total: 9, frac: f(2, 3), options: [3, 6, 7] },
-      { kind: 'whole', who: 'shturman', part: 4, frac: f(1, 3), options: [7, 8, 12] },
-      { kind: 'whole', who: 'kok', part: 5, frac: f(1, 2), options: [7, 10, 15] },
+      whole('shturman', 4, f(1, 3), [7, 8, 12]),
+      whole('kok', 5, f(1, 2), [7, 10, 15]),
+      whole('rumb', 3, f(1, 4), [7, 9, 12]),
+      whole('bocman', 8, f(2, 3), [10, 12, 16]),
+      whole('shturman', 9, f(3, 4), [12, 13, 18]),
     ],
   },
 ];
 
 /** Total coins in the chest and the right answer in coins. */
 export function pierNumbers(r: PierRound): { total: number; pile: number; answer: number } {
-  if (r.kind === 'whole') return { total: r.part * r.frac.d, pile: r.part, answer: r.part * r.frac.d };
+  if (r.kind === 'whole') {
+    const pile = r.part / r.frac.n;
+    return { total: pile * r.frac.d, pile, answer: pile * r.frac.d };
+  }
   const pile = r.total / r.frac.d;
   return { total: r.total, pile, answer: pile * r.frac.n };
 }

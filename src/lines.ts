@@ -221,8 +221,7 @@ export const pilesWord = (n: number, spoken = false) => `${num(n, spoken)}\u00A0
 /** What the captain asks. */
 export function pierAsk(r: PierRound): string {
   const dat = CREW[r.who].dat;
-  if (r.kind === 'deal') return `Отдай ${dat} ${words(r.frac, 'acc')} клада!`;
-  if (r.kind === 'count') return `В сундуке ${coinsWord(r.total)}. ${capitalize(dat)} — ${words(r.frac)} клада. Сколько это монет?`;
+  if (r.kind === 'give') return `Отдай ${dat} ${words(r.frac, 'acc')} клада!`;
   return `${CREW[r.who].name} получил ${words(r.frac, 'acc')} клада — ${coinsWord(r.part)}. Сколько монет было в сундуке?`;
 }
 
@@ -231,18 +230,18 @@ export function pierExplain(r: PierRound, spoken = false): string {
   const { total, pile, answer } = pierNumbers(r);
   const fr = spoken ? capitalize(words(r.frac)) : str(r.frac);
   if (r.kind === 'whole') {
-    return `${fr} — это одна кучка, а всего кучек ${num(r.frac.d, spoken)}. ${capitalize(pilesWord(r.frac.d, spoken))} по ${num(pile, spoken)} — это ${coinsWord(total, spoken)}.`;
+    const all = `${capitalize(pilesWord(r.frac.d, spoken))} по ${num(pile, spoken)} — это ${coinsWord(total, spoken)}.`;
+    if (r.frac.n === 1) return `${fr} — это одна кучка, а всего кучек ${num(r.frac.d, spoken)}. ${all}`;
+    return `${fr} — это ${pilesWord(r.frac.n, spoken)}, ${coinsWord(r.part, spoken)}: по ${num(pile, spoken)} в кучке. А всего кучек ${num(r.frac.d, spoken)}. ${all}`;
   }
   return `${capitalize(coinsWord(total, spoken))} на ${pilesWord(r.frac.d, spoken)} — по ${num(pile, spoken)}. ${fr} — это ${pilesWord(r.frac.n, spoken)}, ${coinsWord(answer, spoken)}.`;
 }
 
-/** Hint while picking piles: how many piles to give. */
-export const pierPickHint = (r: PierRound) =>
-  `Отдать нужно ${words(r.frac, 'acc')}: ${pilesWord(r.frac.n)} из ${r.frac.d}. Выбери ${r.frac.n === 1 ? 'её' : 'их'} и нажми «Отдать».`;
+/** After a wrong sack: the piles show the share, and what was in the sack. */
+export const pierGivenNote = (given: number, spoken = false) => `А в мешке — ${coinsWord(given, spoken)}.`;
 
 export const PIER_LINES = {
-  uneven: 'Кррра! Кучки разные — нечестно!',
-  unevenHint: 'Кучки должны быть одинаковыми. Клади по одной монете в каждую кучку по очереди.',
+  empty: 'Кррра! Мешок пустой! Нажимай на сундук — монеты полетят в мешок.',
   few: 'Маловато будет!',
   many: 'Кррра! А команде что останется?',
   right: 'Честно поделили! Кррра!',
