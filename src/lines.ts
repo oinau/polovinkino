@@ -474,6 +474,10 @@ export const DIPLOMA = {
 // ---------- beaver's bridge ----------
 const lcm = (a: number, b: number) => (a * b) / gcd(a, b);
 
+const TIMES: Record<number, string> = { 3: 'три', 4: 'четыре', 5: 'пять', 6: 'шесть', 7: 'семь', 8: 'восемь', 9: 'девять', 10: 'десять', 11: 'одиннадцать', 12: 'двенадцать' };
+/** After «по»: «по половине», «по одной шестой». Planks that repeat are always one part. */
+const byOne = (p: Frac) => (p.n === 1 && p.d === 2 ? 'половине' : words(p, 'gen'));
+
 /** «1/2 + 1/4 + 1/4 = 2/4 + 1/4 + 1/4 = 4/4 = 1»: brought to one denominator when they differ. */
 export function beaverExplain(placed: Frac[], gap: Frac, spoken = false): string {
   const L = placed.reduce((a, p) => lcm(a, p.d), gap.d);
@@ -483,7 +487,12 @@ export function beaverExplain(placed: Frac[], gap: Frac, spoken = false): string
   if (spoken) {
     const notes = [...new Set(placed.map(p => p.d))].filter(d => d !== L)
       .map(d => `${capitalize(words({ n: 1, d }))} — это ${words({ n: L / d, d: L })}.`);
-    const terms = placed.map(p => words(p)).join(' плюс ');
+    // Three or more equal planks are said as «шесть раз по одной шестой»: a long «плюс» chain tires the ear.
+    const kinds = [...new Map(placed.map(p => [`${p.n}/${p.d}`, p])).values()];
+    const terms = kinds.flatMap(k => {
+      const n = placed.filter(p => p.n === k.n && p.d === k.d).length;
+      return n >= 3 ? [`${TIMES[n]} ${n <= 4 ? 'раза' : 'раз'} по ${byOne(k)}`] : Array(n).fill(words(k));
+    }).join(' плюс ');
     return [...notes, `${capitalize(terms)} — ровно ${whole ? 'одна целая доска' : words(gap)}.`].join(' ');
   }
   const left = placed.map(str).join(' + ');
