@@ -553,12 +553,9 @@ export class Monsters extends Phaser.Scene {
       });
       speak(MONSTER_NOTES[stars]);
     };
-    // The whole house is done for the first time: a diploma with everyone.
-    const allDone = MONSTER_LEVELS.every((_, i) => store.stars('monsters', i) > 0);
-    if (allDone && !store.met('diploma')) {
-      store.meet('diploma');
-      this.diploma(result);
-    } else result();
+    // The last room is done: a diploma with everyone, every time, so it can be shown to friends.
+    if (!hasNext) this.diploma(result);
+    else result();
   }
 
   private diploma(onClose: () => void) {
@@ -566,11 +563,11 @@ export class Monsters extends Phaser.Scene {
     const cx = W / 2, top = H / 2 - 410;
     layer.add(label(this, cx, top + 80, DIPLOMA.title, 64, HEX.terra, 900));
     layer.add(wrapLabel(this, cx, top + 170, DIPLOMA.text, 1200, 34, 700));
-    const heroes = ['pyh', 'ekibas', 'osya', 'borovik', 'tikhon', 'nosochka', 'usach', 'ochkarik', 'sardina',
-      'rumb', 'heron', 'giraffe', 'pip', 'mummy', 'wolf', 'slime', 'spider', 'bat'];
+    const heroes = ['pyh', 'ekibas', 'osya', 'borovik', 'tikhon', 'nosochka', 'usach', 'ochkarik', 'sardina', 'rumb',
+      'bruno', 'heron', 'giraffe', 'pip', 'shustrik', 'mummy', 'wolf', 'slime', 'spider', 'bat'];
     heroes.forEach((h, i) => {
-      const row = Math.floor(i / 9), col = i % 9;
-      const img = this.add.image(cx + (col - 4) * 150, top + 420 + row * 200, `${h}-happy`).setOrigin(0.5, 1);
+      const row = Math.floor(i / 10), col = i % 10;
+      const img = this.add.image(cx + (col - 4.5) * 136, top + 420 + row * 200, `${h}-happy`).setOrigin(0.5, 1);
       img.setScale(Math.min(170 / img.height, 130 / img.width));
       layer.add(img);
       this.tweens.add({ targets: img, y: img.y - 12, duration: 400 + (i % 4) * 80, yoyo: true, repeat: -1, ease: 'Sine.InOut' });

@@ -63,11 +63,11 @@ test('a wrong number of candles is shown by the draught, then the candles light 
   await noErrors(errors);
 });
 
-test('the whole house done for the first time gives the diploma', async ({ page }) => {
-  const errors = await openGame(page, { met: ALL_HEROES, stars: { monsters: [3, 3, 3, 3] } });
+test('the last room gives the diploma every time it is done', async ({ page }) => {
+  // Already done before: the diploma comes again, to show friends.
+  const errors = await openGame(page, { met: ALL_HEROES, stars: { monsters: [3, 3, 3, 3, 3] } });
   await begin(page, 4);
   for (let i = 0; i < 3; i++) await playRound(page);
-  await expect.poll(async () => (await saved(page)).met).toContain('diploma');
-  expect(await mon(page, "return s.children.list.some(o => o.depth === 100 && o.list?.some(c => c.text === 'Диплом мастера дробей'));")).toBe(true);
+  await expect.poll(() => mon(page, "return s.children.list.some(o => o.depth === 100 && o.list?.some(c => c.text === 'Диплом мастера дробей'));")).toBe(true);
   await noErrors(errors);
 });
