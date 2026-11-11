@@ -456,14 +456,14 @@ export class Town extends Phaser.Scene {
         previewVoice();
       });
     }
-    row('Начать заново', () => { layer.destroy(); this.confirmReset(); }, { fill: C.terra, color: HEX.paper });
+    row('Сбросить прогресс', () => { layer.destroy(); this.confirmReset(); }, { fill: C.terra, color: HEX.paper });
   }
 
   private confirmReset() {
     const layer = modal(this, 1000, 460);
-    layer.add(label(this, W / 2, H / 2 - 140, 'Начать заново?', 56, HEX.navy, 900));
+    layer.add(label(this, W / 2, H / 2 - 140, 'Сбросить прогресс?', 56, HEX.navy, 900));
     layer.add(label(this, W / 2, H / 2 - 40, 'Звёзды, монеты и знакомства с героями обнулятся.', 32, HEX.navy, 700));
-    layer.add(label(this, W / 2, H / 2 + 10, 'Звук и выбранный голос останутся.', 28, HEX.navy, 600));
+    layer.add(label(this, W / 2, H / 2 + 10, 'Звук, голос и ударения останутся.', 28, HEX.navy, 600));
     layer.add(new Button(this, W / 2 - 170, H / 2 + 130, 'Отмена', () => layer.destroy(), { w: 280, h: 88, size: 34 }));
     layer.add(new Button(this, W / 2 + 170, H / 2 + 130, 'Сбросить', () => {
       store.reset();
