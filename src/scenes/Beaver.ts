@@ -184,9 +184,11 @@ export class Beaver extends Phaser.Scene {
     k.long.setVisible(show);
     k.end?.setVisible(!show);
     if (k.fixed) return;
-    k.c.removeInteractive();
-    if (show) k.c.setSize(this.value(k.p) * U, PLANK_H + 20); else k.c.setSize(END.w + 10, END.h + 10);
-    k.c.setInteractive({ useHandCursor: true });
+    const [w, h] = show ? [this.value(k.p) * U, PLANK_H + 20] : [END.w + 10, END.h + 10];
+    k.c.setSize(w, h);
+    // Resize the hit area in place: removeInteractive() is applied on the next frame and would undo a fresh setInteractive().
+    if (k.c.input) (k.c.input.hitArea as Phaser.Geom.Rectangle).setSize(w, h);
+    else k.c.setInteractive({ useHandCursor: true });
   }
 
   /** Where a plank waits on the near bank: in a row, or in the stack (rows of 3, 2, 1). */

@@ -93,3 +93,26 @@ test('what is missing: a shorter plank leaves a slit and goes back to the stack'
   expect(await bvr(page, 'return s.guide.pillText.text;')).toContain('1/2 + 1/4 + 1/4');
   await noErrors(errors);
 });
+
+/** Game coordinates to page coordinates: the camera keeps the stage centred. */
+async function click(page: Page, x: number, y: number) {
+  const box = (await page.locator('canvas').boundingBox())!;
+  const p = await bvr(page, `const c = s.cameras.main; return [(${x} - c.worldView.x) / c.worldView.width, (${y} - c.worldView.y) / c.worldView.height];`) as number[];
+  await page.mouse.click(box.x + p[0] * box.width, box.y + p[1] * box.height);
+}
+
+for (const level of [1, 2]) {
+  test(`level ${level + 1}: a real click lays a plank and a second click takes it back`, async ({ page }) => {
+    const errors = await openGame(page, { met: ALL_HEROES });
+    await begin(page, level);
+    const at = () => bvr(page, 'const c = s.planks[0].c; return [c.x, c.y];') as Promise<number[]>;
+    let [x, y] = await at();
+    await click(page, x, y);
+    await expect.poll(() => bvr(page, 'return s.planks[0].placed;')).toBe(true);
+    await page.waitForTimeout(1500);
+    [x, y] = await at();
+    await click(page, x, y);
+    await expect.poll(() => bvr(page, 'return s.planks[0].placed;')).toBe(false);
+    await noErrors(errors);
+  });
+}
