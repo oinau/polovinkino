@@ -10,14 +10,15 @@ const portrait = matchMedia('(orientation: portrait)');
 
 let lockErrors: string[] = [];
 const lockListeners = new Set<() => void>();
-const LOCK_RETRY_MS = 500;
+/** Firefox for Android needs a moment after entering full screen; give up after about 3 s. */
+const LOCK_RETRIES_MS = [300, 700, 1000, 1500];
 
 /**
  * In full screen on a phone, keep the picture landscape even if auto-rotate is off. Called once
  * the page is full screen: Firefox for Android asks the browser app, which refuses (NotSupportedError)
- * while it does not consider the tab full screen yet, so a refusal is retried once a bit later.
+ * until it has finished switching the tab to full screen, so a refusal is retried a few times.
  */
-function lockLandscape(retry = true) {
+function lockLandscape(attempt = 0) {
   if (!isTouch() || !document.fullscreenElement) return;
   const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
   if (!o?.lock) return;
@@ -28,7 +29,8 @@ function lockLandscape(retry = true) {
       lockErrors.push(e instanceof Error ? e.name : String(e));
       console.warn('orientation lock refused:', e);
       lockListeners.forEach(fn => fn());
-      if (retry) setTimeout(() => lockLandscape(false), LOCK_RETRY_MS);
+      const wait = LOCK_RETRIES_MS[attempt];
+      if (wait !== undefined) setTimeout(() => lockLandscape(attempt + 1), wait);
     },
   );
 }
@@ -83,7 +85,7 @@ export function setupOrientation(game: Phaser.Game) {
     // Already full screen (the lock was refused): only turning by hand is left.
     full.hidden = game.scale.isFullscreen;
     // A hint for whoever debugs it from a screenshot; empty when the lock worked or was never tried.
-    why.textContent = game.scale.isFullscreen && lockErrors.length ? `Браузер не дал повернуть сам (${lockErrors.join(', ')})` : '';
+    why.textContent = game.scale.isFullscreen && lockErrors.length ? `Браузер не дал повернуть сам (${lockErrors.at(-1)} ×${lockErrors.length})` : '';
   };
   const why = cover.querySelector<HTMLParagraphElement>('.why')!;
   lockListeners.add(update);
