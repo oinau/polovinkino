@@ -473,13 +473,15 @@ export class Town extends Phaser.Scene {
 
   private openPicker(place: Place, title: string) {
     const levels = LEVELS[place];
-    const layer = modal(this, 1400, 660);
+    // Leave 200 px on each side of the outer circles for the level names; cap at the stage width.
+    const gap = Math.min(300, (W - 120 - 400) / Math.max(1, levels.length - 1));
+    const pw = Math.max(1400, (levels.length - 1) * gap + 400);
+    const layer = modal(this, pw, 660);
     const top = H / 2 - 330;
     layer.add(label(this, W / 2, top + 80, title, 56, HEX.navy, 900));
-    const close = iconButton(this, W / 2 + 640, top + 60, 'close', () => layer.destroy(), 40);
+    const close = iconButton(this, W / 2 + pw / 2 - 60, top + 60, 'close', () => layer.destroy(), 40);
     layer.add(close);
 
-    const gap = 300;
     const x0 = W / 2 - ((levels.length - 1) * gap) / 2;
     levels.forEach((lv, i) => {
       const x = x0 + i * gap, y = top + 300;
