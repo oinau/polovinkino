@@ -8,33 +8,35 @@ import { HEX } from './theme';
 const isTouch = () => matchMedia('(pointer: coarse)').matches;
 const portrait = matchMedia('(orientation: portrait)');
 
-let lockError = '';
+let lockErrors: string[] = [];
 const lockListeners = new Set<() => void>();
+const LOCK_RETRY_MS = 500;
 
-/** In full screen on a phone, keep the picture landscape even if auto-rotate is off. */
-function lockLandscape() {
-  if (!isTouch()) return;
+/**
+ * In full screen on a phone, keep the picture landscape even if auto-rotate is off. Called once
+ * the page is full screen: Firefox for Android asks the browser app, which refuses (NotSupportedError)
+ * while it does not consider the tab full screen yet, so a refusal is retried once a bit later.
+ */
+function lockLandscape(retry = true) {
+  if (!isTouch() || !document.fullscreenElement) return;
   const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
   if (!o?.lock) return;
   o.lock('landscape').then(
-    () => { lockError = ''; lockListeners.forEach(fn => fn()); },
+    () => { lockErrors = []; lockListeners.forEach(fn => fn()); },
     (e: unknown) => {
       // Refused (desktop, iPhone, Firefox before 144): turning by hand still works.
-      lockError = e instanceof Error ? e.name : String(e);
+      lockErrors.push(e instanceof Error ? e.name : String(e));
       console.warn('orientation lock refused:', e);
       lockListeners.forEach(fn => fn());
+      if (retry) setTimeout(() => lockLandscape(false), LOCK_RETRY_MS);
     },
   );
 }
 
-/**
- * Full screen on, then the landscape lock in the same tap: Firefox allows the lock while the
- * full-screen request is still pending, Chrome once it is granted (the fullscreenchange handler
- * below tries again then).
- */
+/** Full screen on; the landscape lock follows on fullscreenchange. */
 export function enterFullscreen(game: Phaser.Game) {
+  lockErrors = [];
   game.scale.startFullscreen();
-  lockLandscape();
 }
 
 const PHONE_SVG = `<svg viewBox="0 0 120 120" width="140" height="140" aria-hidden="true">
@@ -81,7 +83,7 @@ export function setupOrientation(game: Phaser.Game) {
     // Already full screen (the lock was refused): only turning by hand is left.
     full.hidden = game.scale.isFullscreen;
     // A hint for whoever debugs it from a screenshot; empty when the lock worked or was never tried.
-    why.textContent = game.scale.isFullscreen && lockError ? `Браузер не дал повернуть сам (${lockError})` : '';
+    why.textContent = game.scale.isFullscreen && lockErrors.length ? `Браузер не дал повернуть сам (${lockErrors.join(', ')})` : '';
   };
   const why = cover.querySelector<HTMLParagraphElement>('.why')!;
   lockListeners.add(update);
