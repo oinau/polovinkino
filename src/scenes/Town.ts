@@ -6,6 +6,7 @@ import { Button, label, iconButton, modal, soundButton, starShape, wrapLabel } f
 import { nextVoice, onVoicesChanged, previewVoice, ruVoices, sfx, voiceName, voiceState } from '../audio';
 import { STRESS_MODES } from '../pronounce/dictionary';
 import { edges, hudScale, margins, onResize } from '../stage';
+import { enterFullscreen } from '../orientation';
 import { FAR_FACTOR, MID_FACTOR, RIVER, ROAD_END, SPOTS, WORLD_W, clampScroll, maxScroll, nextSpot, scrollTo, type Spot } from '../map';
 
 const LEVELS: Record<Place, { name: string }[]> = { pizza: PIZZA_LEVELS, gnomes: GNOME_LEVELS, clock: CLOCK_LEVELS, pier: PIER_LEVELS, beaver: BEAVER_LEVELS, doctor: DOCTOR_LEVELS, potion: POTION_LEVELS, courier: COURIER_LEVELS, monsters: MONSTER_LEVELS };
@@ -418,7 +419,7 @@ export class Town extends Phaser.Scene {
   private fullscreenButton() {
     if (!this.scale.fullscreen.available) return null;
     const icon = () => (this.scale.isFullscreen ? 'shrink' : 'expand');
-    const b = iconButton(this, 0, 0, icon(), () => this.scale.toggleFullscreen());
+    const b = iconButton(this, 0, 0, icon(), () => (this.scale.isFullscreen ? this.scale.stopFullscreen() : enterFullscreen(this.game)));
     const sync = () => b.setIcon(icon());
     this.scale.on(Phaser.Scale.Events.ENTER_FULLSCREEN, sync);
     this.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, sync);

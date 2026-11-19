@@ -36,6 +36,8 @@ async function start() {
       autoCenter: Phaser.Scale.CENTER_BOTH,
       width: W,
       height: H,
+      // The whole page goes full screen, so the «turn the phone» cover (a sibling of the canvas) stays visible.
+      fullscreenTarget: document.documentElement,
     },
     scene: [Boot, Town, Pizzeria, Gnomes, Clock, Pier, Beaver, Doctor, Potion, Courier, Monsters],
   });

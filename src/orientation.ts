@@ -8,11 +8,33 @@ import { HEX } from './theme';
 const isTouch = () => matchMedia('(pointer: coarse)').matches;
 const portrait = matchMedia('(orientation: portrait)');
 
+let lockError = '';
+const lockListeners = new Set<() => void>();
+
 /** In full screen on a phone, keep the picture landscape even if auto-rotate is off. */
 function lockLandscape() {
   if (!isTouch()) return;
   const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
-  o?.lock?.('landscape').catch(() => { /* not allowed here (desktop, iPhone): turning by hand still works */ });
+  if (!o?.lock) return;
+  o.lock('landscape').then(
+    () => { lockError = ''; lockListeners.forEach(fn => fn()); },
+    (e: unknown) => {
+      // Refused (desktop, iPhone, Firefox before 144): turning by hand still works.
+      lockError = e instanceof Error ? e.name : String(e);
+      console.warn('orientation lock refused:', e);
+      lockListeners.forEach(fn => fn());
+    },
+  );
+}
+
+/**
+ * Full screen on, then the landscape lock in the same tap: Firefox allows the lock while the
+ * full-screen request is still pending, Chrome once it is granted (the fullscreenchange handler
+ * below tries again then).
+ */
+export function enterFullscreen(game: Phaser.Game) {
+  game.scale.startFullscreen();
+  lockLandscape();
 }
 
 const PHONE_SVG = `<svg viewBox="0 0 120 120" width="140" height="140" aria-hidden="true">
@@ -23,8 +45,6 @@ const PHONE_SVG = `<svg viewBox="0 0 120 120" width="140" height="140" aria-hidd
 </svg>`;
 
 export function setupOrientation(game: Phaser.Game) {
-  game.scale.on(Phaser.Scale.Events.ENTER_FULLSCREEN, lockLandscape);
-
   const cover = document.createElement('div');
   cover.id = 'rotate';
   cover.innerHTML = `
@@ -37,24 +57,38 @@ export function setupOrientation(game: Phaser.Game) {
       #rotate button { font: inherit; font-size: 24px; font-weight: 900; border: 4px solid ${HEX.paper}; border-radius: 999px;
         padding: 16px 32px; background: ${HEX.terra}; color: ${HEX.paper}; }
       #rotate .skip { background: none; border: none; color: ${HEX.paper}; opacity: .7; font-size: 18px; text-decoration: underline; padding: 8px; }
+      #rotate .why { margin: 0; font-size: 13px; opacity: .5; font-weight: 700; }
       #rotate .phone { transform-origin: 60px 60px; animation: turn 2.4s ease-in-out infinite; }
       @keyframes turn { 0%, 25% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
     </style>
     ${PHONE_SVG}
     <h1>Поверни телефон боком</h1>
     <button class="full" type="button">Играть на весь экран</button>
-    <button class="skip" type="button">Играть так</button>`;
+    <button class="skip" type="button">Играть так</button>
+    <p class="why"></p>`;
   document.body.appendChild(cover);
 
   const full = cover.querySelector<HTMLButtonElement>('.full')!;
   if (!game.scale.fullscreen.available) full.remove();
-  // Full screen must start right inside the tap; the lock follows on ENTER_FULLSCREEN.
-  full.addEventListener('click', () => game.scale.startFullscreen());
+  // Full screen must start right inside the tap; the lock follows once the page is full screen.
+  full.addEventListener('click', () => enterFullscreen(game));
 
   let skipped = false;
   cover.querySelector('.skip')!.addEventListener('click', () => { skipped = true; update(); });
 
-  const update = () => cover.classList.toggle('on', isTouch() && portrait.matches && !skipped);
+  const update = () => {
+    cover.classList.toggle('on', isTouch() && portrait.matches && !skipped);
+    // Already full screen (the lock was refused): only turning by hand is left.
+    full.hidden = game.scale.isFullscreen;
+    // A hint for whoever debugs it from a screenshot; empty when the lock worked or was never tried.
+    why.textContent = game.scale.isFullscreen && lockError ? `Браузер не дал повернуть сам (${lockError})` : '';
+  };
+  const why = cover.querySelector<HTMLParagraphElement>('.why')!;
+  lockListeners.add(update);
   portrait.addEventListener('change', update);
+  document.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement) lockLandscape();
+    update();
+  });
   update();
 }
