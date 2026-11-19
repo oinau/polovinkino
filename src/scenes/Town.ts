@@ -2,10 +2,10 @@ import Phaser from 'phaser';
 import { C, HEX, W, H, BLEED } from '../theme';
 import { store, type Place } from '../store';
 import { BEAVER_LEVELS, CLOCK_LEVELS, COURIER_LEVELS, DOCTOR_LEVELS, GNOME_LEVELS, MONSTER_LEVELS, PIER_LEVELS, PIZZA_LEVELS, POTION_LEVELS } from '../levels';
-import { Button, label, iconButton, modal, soundButton, starShape } from '../ui';
-import { nextVoice, previewVoice, ruVoices, sfx, voiceName } from '../audio';
+import { Button, label, iconButton, modal, soundButton, starShape, wrapLabel } from '../ui';
+import { nextVoice, onVoicesChanged, previewVoice, ruVoices, sfx, voiceName, voiceState } from '../audio';
 import { STRESS_MODES } from '../pronounce/dictionary';
-import { edges, margins, onResize } from '../stage';
+import { edges, hudScale, margins, onResize } from '../stage';
 import { FAR_FACTOR, MID_FACTOR, RIVER, ROAD_END, SPOTS, WORLD_W, clampScroll, maxScroll, nextSpot, scrollTo, type Spot } from '../map';
 
 const LEVELS: Record<Place, { name: string }[]> = { pizza: PIZZA_LEVELS, gnomes: GNOME_LEVELS, clock: CLOCK_LEVELS, pier: PIER_LEVELS, beaver: BEAVER_LEVELS, doctor: DOCTOR_LEVELS, potion: POTION_LEVELS, courier: COURIER_LEVELS, monsters: MONSTER_LEVELS };
@@ -68,11 +68,11 @@ export class Town extends Phaser.Scene {
     this.setupScrolling();
     // The corner buttons and the arrows keep to the screen edges, the title to the middle.
     onResize(this, () => {
-      const e = edges(this);
-      coins.setPosition(e.left, e.top);
-      corner.forEach((b, i) => b.setPosition(e.right - 70 - i * 110, e.top + 66));
-      this.navL.setX(e.left + 70);
-      this.navR.setX(e.right - 70);
+      const e = edges(this), k = hudScale(this);
+      coins.setPosition(e.left, e.top).setScale(k);
+      corner.forEach((b, i) => b.setPosition(e.right - (70 + i * 110) * k, e.top + 66 * k).setScale(k));
+      this.navL.setX(e.left + 70 * k).setScale(k);
+      this.navR.setX(e.right - 70 * k).setScale(k);
       this.setScroll(this.scroll);
     });
 
@@ -429,10 +429,11 @@ export class Town extends Phaser.Scene {
     return b;
   }
 
-  /** Settings behind the gear: voice and stress marks (only with browser voices), and starting over. */
+  /** Settings behind the gear: voice and stress marks (browser voices), and starting over. */
   private openSettings() {
-    const voices = ruVoices().length > 0;
-    const rows = voices ? 3 : 1, h = 174 + rows * 120;
+    // The voice rows are shown even while the voice list is loading, so it is clear that speech exists.
+    const voices = voiceState() !== 'none' || ruVoices().length > 0;
+    const rows = voices ? 3 : 2, h = 174 + rows * 120;
     const layer = modal(this, 900, h);
     const top = H / 2 - h / 2;
     layer.add(label(this, W / 2, top + 80, 'Настройки', 56, HEX.navy, 900));
@@ -442,19 +443,37 @@ export class Town extends Phaser.Scene {
       const b: Button = new Button(this, W / 2, y, caption, () => onClick(b), { w: 640, h: 88, size: 32, ...opts });
       layer.add(b);
       y += 120;
+      return b;
     };
     if (voices) {
       // Each choice is heard at once, so it is picked by ear; it turns the sound on too.
       const soundOn = () => { store.sound = true; this.snd.setIcon('sound'); };
-      row(`Голос: ${voiceName()}`, b => { soundOn(); nextVoice(); b.setCaption(`Голос: ${voiceName()}`); });
+      const voiceCaption = () => ({ loading: 'Голос: загружается…', ready: `Голос: ${voiceName()}`, none: 'Голоса нет на этом устройстве' })[voiceState()];
+      const vb = row(voiceCaption(), b => {
+        if (voiceState() !== 'ready') return;
+        soundOn();
+        nextVoice();
+        b.setCaption(voiceCaption());
+      });
       const stressCaption = () => `Ударения: ${STRESS_MODES.find(m => m.mode === store.stress)?.label}`;
-      row(stressCaption(), b => {
+      const sb = row(stressCaption(), b => {
         const i = STRESS_MODES.findIndex(m => m.mode === store.stress);
         store.stress = STRESS_MODES[(i + 1) % STRESS_MODES.length].mode;
         b.setCaption(stressCaption());
         soundOn();
         previewVoice();
       });
+      const sync = () => {
+        vb.setCaption(voiceCaption());
+        vb.setEnabled(voiceState() === 'ready');
+        sb.setEnabled(voiceState() === 'ready');
+      };
+      sync();
+      const off = onVoicesChanged(sync);
+      layer.once(Phaser.GameObjects.Events.DESTROY, off);
+      this.events.once('shutdown', off);
+    } else {
+      row('Голоса нет на этом устройстве', () => {}).setEnabled(false);
     }
     row('Сбросить прогресс', () => { layer.destroy(); this.confirmReset(); }, { fill: C.terra, color: HEX.paper });
   }
@@ -473,9 +492,10 @@ export class Town extends Phaser.Scene {
 
   private openPicker(place: Place, title: string) {
     const levels = LEVELS[place];
-    // Leave 200 px on each side of the outer circles for the level names; cap at the stage width.
-    const gap = Math.min(300, (W - 120 - 400) / Math.max(1, levels.length - 1));
-    const pw = Math.max(1400, (levels.length - 1) * gap + 400);
+    // Every level gets a column `gap` wide; names wrap inside it. The stage always fits the screen
+    // whole, so the row never needs scrolling: it only has to fit the stage width.
+    const gap = Math.min(300, (W - 160) / levels.length);
+    const pw = Math.max(1400, levels.length * gap + 80);
     const layer = modal(this, pw, 660);
     const top = H / 2 - 330;
     layer.add(label(this, W / 2, top + 80, title, 56, HEX.navy, 900));
@@ -497,9 +517,10 @@ export class Town extends Phaser.Scene {
         g.lineStyle(9, C.navy).beginPath().arc(x, y - 14, 20, Math.PI, 0).strokePath();
         g.fillStyle(C.navy).fillRoundedRect(x - 30, y - 14, 60, 48, 10);
       }
-      layer.add(label(this, x, y + 140, lv.name, 30, HEX.navy, 800));
+      // Stars right under the circle, then the name, which may take two lines.
+      layer.add(wrapLabel(this, x, y + 182, lv.name, gap - 30, 30, 800).setOrigin(0.5, 0));
       const sg = this.add.graphics();
-      for (let k = 0; k < 3; k++) starShape(sg, x + (k - 1) * 56, y + 200, 22, k < store.stars(place, i));
+      for (let k = 0; k < 3; k++) starShape(sg, x + (k - 1) * 56, y + 145, 22, k < store.stars(place, i));
       layer.add(sg);
 
       if (unlocked) {

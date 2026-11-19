@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { C, HEX, FONT, W, H, BLEED } from './theme';
-import { edges, onResize } from './stage';
+import { edges, hudScale, onResize } from './stage';
 import { sfx, speak, stopSpeaking } from './audio';
 import { store } from './store';
 
@@ -155,9 +155,9 @@ export function topBar(scene: Scene, title: string, onHome: () => void) {
   const snd = soundButton(scene, W - 70, 66);
   // The buttons keep to the screen corners; the title stays over the stage.
   onResize(scene, () => {
-    const e = edges(scene);
-    home.setPosition(e.left + 70, e.top + 66);
-    snd.setPosition(e.right - 70, e.top + 66);
+    const e = edges(scene), k = hudScale(scene);
+    home.setPosition(e.left + 70 * k, e.top + 66 * k).setScale(k);
+    snd.setPosition(e.right - 70 * k, e.top + 66 * k).setScale(k);
   });
   label(scene, W / 2, 62, title, 40, HEX.navy, 900);
 }

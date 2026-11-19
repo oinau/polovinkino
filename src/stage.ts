@@ -32,3 +32,15 @@ export function onResize(scene: Phaser.Scene, place: () => void) {
   scene.scale.on(Phaser.Scale.Events.RESIZE, later);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.scale.off(Phaser.Scale.Events.RESIZE, later));
 }
+
+/** Smallest comfortable size of a round button on screen, in CSS pixels (a fingertip). */
+const MIN_BUTTON_CSS = 52;
+
+/**
+ * How much to enlarge the corner buttons (drawn 88 stage px wide) so they stay finger-sized
+ * on a small screen; 1 on a computer or a tablet.
+ */
+export function hudScale(scene: Phaser.Scene) {
+  const cssPerStagePx = 1 / scene.scale.displayScale.x;
+  return Phaser.Math.Clamp(MIN_BUTTON_CSS / (88 * cssPerStagePx), 1, 1.8);
+}

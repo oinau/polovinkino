@@ -88,6 +88,51 @@ function voice() {
   return list.find(v => v.name === store.voice) ?? list[0] ?? null;
 }
 
+// Browsers fill the voice list asynchronously: getVoices() is empty at first and 'voiceschanged'
+// fires later (Firefox starts loading only on the first getVoices() call). Until the list has
+// arrived, or the wait has given up, speech waits for it instead of staying silent.
+export type VoiceState = 'loading' | 'ready' | 'none';
+const VOICE_WAIT_MS = 10_000;
+let voicesSettled = false;
+let voicesWait: Promise<void> | null = null;
+const voiceListeners = new Set<() => void>();
+
+export function voiceState(): VoiceState {
+  if (!('speechSynthesis' in window)) return 'none';
+  if (ruVoices().length) return 'ready';
+  return voicesSettled ? 'none' : 'loading';
+}
+
+/** Calls `fn` whenever the voice list changes or the wait for it ends; returns the unsubscribe. */
+export function onVoicesChanged(fn: () => void) {
+  voiceListeners.add(fn);
+  return () => { voiceListeners.delete(fn); };
+}
+
+/** Starts loading the voice list; resolves once Russian voices are there or after a few seconds. */
+export function loadVoices(): Promise<void> {
+  if (voicesWait) return voicesWait;
+  if (!('speechSynthesis' in window)) {
+    voicesSettled = true;
+    return (voicesWait = Promise.resolve());
+  }
+  voicesWait = new Promise(resolve => {
+    const settle = () => {
+      if (voicesSettled) return;
+      voicesSettled = true;
+      resolve();
+      voiceListeners.forEach(fn => fn());
+    };
+    speechSynthesis.addEventListener('voiceschanged', () => {
+      if (ruVoices().length) settle();
+      voiceListeners.forEach(fn => fn());
+    });
+    if (ruVoices().length) settle();
+    setTimeout(settle, VOICE_WAIT_MS);
+  });
+  return voicesWait;
+}
+
 export const voiceName = () => voice()?.name ?? '';
 
 /** Switch to the next voice and let it introduce itself. */
@@ -122,6 +167,12 @@ let playing: HTMLAudioElement | null = null;
 
 function tts(text: string, done: () => void) {
   const v = voice();
+  if (!v && !voicesSettled && 'speechSynthesis' in window) {
+    // The list is still loading: say it once it has arrived, unless something else was said meanwhile.
+    const my = token;
+    loadVoices().then(() => { if (my === token) (voice() ? tts(text, done) : done()); });
+    return;
+  }
   if (!v || !('speechSynthesis' in window)) return done();
   try {
     // Respellings and stress marks go to the synthesizer only; recordings are found by the plain text.

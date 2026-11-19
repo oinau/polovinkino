@@ -63,6 +63,43 @@ test('the synthesizer gets «пица» and the stress chosen for this device', 
   await noErrors(errors);
 });
 
+test('speech said before the voice list arrives waits for it, and settings say it is loading', async ({ page }) => {
+  // Like Firefox and Chrome: getVoices() is empty at first, the voices come later with 'voiceschanged'.
+  await page.addInitScript(() => {
+    const w = window as any;
+    w.__tts = [];
+    w.__voices = [];
+    speechSynthesis.getVoices = () => w.__voices;
+    w.__arrive = () => {
+      w.__voices = [{ name: 'Test', lang: 'ru-RU' } as SpeechSynthesisVoice];
+      speechSynthesis.dispatchEvent(new Event('voiceschanged'));
+    };
+    Object.defineProperty(SpeechSynthesisUtterance.prototype, 'voice', {
+      configurable: true,
+      get() { return this._voice; },
+      set(v) { this._voice = v; },
+    });
+    speechSynthesis.speak = (u: SpeechSynthesisUtterance) => { w.__tts.push(u.text); setTimeout(() => u.onend?.({} as any), 10); };
+  });
+  const errors = await openGame(page, { sound: true });
+  const before = await page.evaluate(async () => {
+    const audio = await import('/src/audio.ts');
+    audio.speak('Первая фраза');
+    await new Promise(r => setTimeout(r, 200));
+    return { state: audio.voiceState(), tts: [...(window as any).__tts] };
+  });
+  expect(before).toEqual({ state: 'loading', tts: [] });
+
+  const after = await page.evaluate(async () => {
+    const audio = await import('/src/audio.ts');
+    (window as any).__arrive();
+    await new Promise(r => setTimeout(r, 200));
+    return { state: audio.voiceState(), tts: (window as any).__tts };
+  });
+  expect(after).toEqual({ state: 'ready', tts: ['Первая фраза'] });
+  await noErrors(errors);
+});
+
 test('studio exports recordings as a zip with a manifest', async ({ page }) => {
   await page.goto('/studio.html');
   await page.waitForSelector('#list .item');
