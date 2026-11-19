@@ -143,9 +143,12 @@ export function iconButton(scene: Scene, x: number, y: number, icon: Icon, onCli
   drawIcon(icon);
   c.add(g);
   c.setSize(r * 2, r * 2).setInteractive({ useHandCursor: true });
-  c.on('pointerdown', () => c.setScale(0.92));
-  c.on('pointerout', () => c.setScale(1));
-  c.on('pointerup', () => { c.setScale(1); sfx('click'); onClick(); });
+  // The press squeezes the button relative to its size: on phones the corner buttons are enlarged.
+  let rest: number | null = null;
+  const release = () => { if (rest !== null) c.setScale(rest); rest = null; };
+  c.on('pointerdown', () => { rest ??= c.scale; c.setScale(rest * 0.92); });
+  c.on('pointerout', release);
+  c.on('pointerup', () => { release(); sfx('click'); onClick(); });
   return Object.assign(c, { setIcon: drawIcon });
 }
 

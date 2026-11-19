@@ -76,3 +76,21 @@ test('the monster house on the mountain opens its rooms; when the road is done t
   await expect.poll(() => modalOpen(page)).toBe(true);
   await noErrors(errors);
 });
+
+test('on a phone the corner buttons are enlarged and stay so after a tap', async ({ page }) => {
+  await page.setViewportSize({ width: 851, height: 393 });
+  const errors = await openGame(page);
+  const scales = await page.evaluate(async () => {
+    const town = (window as any).__game.scene.getScene('Town');
+    await new Promise(r => setTimeout(r, 100)); // the resize handler places the buttons
+    const before = town.snd.scale;
+    town.snd.emit('pointerdown');
+    const pressed = town.snd.scale;
+    town.snd.emit('pointerup');
+    return { before, pressed, after: town.snd.scale };
+  });
+  expect(scales.before).toBeGreaterThan(1.2);
+  expect(scales.pressed).toBeLessThan(scales.before);
+  expect(scales.after).toBe(scales.before);
+  await noErrors(errors);
+});
